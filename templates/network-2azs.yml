@@ -1,0 +1,425 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Resources for VPC and routing using 2 Availability Zones
+  It includes a VPC with two public subnets and private subnets,
+  an ACL for the subets, a pair of NAT Gateways (one in each AZ)
+  and default routes for them in the private subnets
+
+Parameters:
+
+  Identifier:
+    Type: String
+    Description: A name identifier to tag the networking resources
+
+  VpcCidr:
+    Type: String
+    Default: 172.16.0.0/16
+    Description: IPV4 CIDR block for the VPC
+    AllowedPattern: "(\\d{1,3}\\.){3}\\d{1,3}/(\\d{1,2})"
+    ConstraintDescription: You must enter a valid CIDR string
+
+  PublicSubnetsCidr:
+    Type: List<String>
+    Default: 172.16.0.0/24,172.16.1.0/24
+    Description: IPV4 CIDR blocks for the public subnets
+
+  PrivateSubnetsCidr:
+    Type: List<String>
+    Default: 172.16.10.0/24,172.16.11.0/24
+    Description: IPV4 CIDR blocks for the private subnets
+
+  SetNatGateway:
+    Description: Whether to deploy a Nat Gateway or not
+    Type: String
+    Default: true
+    AllowedValues: [ true, false ]
+    ConstraintDescription: Value must be true or false
+
+  NatGatewayHA:
+    Type: String
+    Default: false
+    Description: Wheter to add redundancy for high availability to the Nat Gateway
+    AllowedValues: [ true, false ]
+    ConstraintDescription: Value must be true or false
+
+  #  ############### Tags ###############
+
+  OwnerName:
+    Type: String
+    Default: nclouds
+    Description: An arbitrary tag name for the owner of these resources
+
+  ProjectName:
+    Type: String
+    Description: The name of the project to which these resources belong
+
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name to append to resources names and tags
+
+Conditions:
+
+  CreateNatGateway: !Equals [ !Ref SetNatGateway, true ]
+
+  RedundantNatGateway: !And [ !Condition CreateNatGateway, !Equals [ !Ref NatGatewayHA, true ] ]
+
+Resources:
+
+  # ############## Network #############
+
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      InstanceTenancy: default
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+      - Key: Name
+        Value: !Sub ${Identifier}
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [ 0, !Ref PublicSubnetsCidr ]
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+      - Key: Name
+        Value: !Sub ${Identifier}-public-1
+      - Key: Tier
+        Value: public
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [ 1, !Ref PublicSubnetsCidr ]
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      Tags:
+      - Key: Name
+        Value: !Sub ${Identifier}-public-2
+      - Key: Tier
+        Value: public
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [ 0, !Ref PrivateSubnetsCidr ]
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+      - Key: Name
+        Value: !Sub ${Identifier}-private-1
+      - Key: Tier
+        Value: private
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [ 1, !Ref PrivateSubnetsCidr ]
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      Tags:
+      - Key: Name
+        Value: !Sub ${Identifier}-private-2
+      - Key: Tier
+        Value: private
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  # ############## Routing #############
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: !Sub ${Identifier}
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc    
+
+  PublicRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+      - Key: Name
+        Value: !Sub ${Identifier}-public
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+  
+  PrivateRT1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+      - Key: Name
+        Value: !Sub ${Identifier}-private-1
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  PrivateRT2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+      - Key: Name
+        Value: !Sub ${Identifier}-private-2
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  RouteToInternetGateway:
+    Type: AWS::EC2::Route
+    DependsOn: 
+    - InternetGateway
+    - InternetGatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref PublicRT
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RTAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PublicRT
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RTAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PublicRT
+      SubnetId: !Ref PublicSubnet2
+
+  PrivateSubnet1RTAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PrivateRT1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateSubnet2RTAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PrivateRT2
+      SubnetId: !Ref PrivateSubnet2
+
+  # ################ NAT ###############
+
+  NatGatewayEIP1:
+    Type: AWS::EC2::EIP
+    Condition: CreateNatGateway
+    Properties:
+      Domain: vpc
+
+  NatGatewayEIP2:
+    Type: AWS::EC2::EIP
+    Condition: RedundantNatGateway
+    Properties:
+      Domain: vpc
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Condition: CreateNatGateway
+    Properties: 
+      AllocationId: !GetAtt NatGatewayEIP1.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags: 
+      - Key: Name
+        Value: !Sub ${Identifier}-1
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Condition: RedundantNatGateway
+    Properties: 
+      AllocationId: !GetAtt NatGatewayEIP2.AllocationId
+      SubnetId: !Ref PublicSubnet2
+      Tags: 
+      - Key: Name
+        Value: !Sub ${Identifier}-2
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  RouteToNat1:
+    Type: AWS::EC2::Route
+    Condition: CreateNatGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref PrivateRT1
+      NatGatewayId: !Ref NatGateway1
+
+  RouteToNat2:
+    Type: AWS::EC2::Route
+    Condition: CreateNatGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref PrivateRT2
+      NatGatewayId: !If [ RedundantNatGateway, !Ref NatGateway2, !Ref NatGateway1 ]
+
+  #  ############### ACLs ###############
+
+  Acl:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+      - Key: Name
+        Value: !Sub ${Identifier}
+      - Key: Owner
+        Value: !Ref OwnerName
+      - Key: ProjectName
+        Value: !Ref ProjectName
+      - Key: Environment
+        Value: !Ref Environment
+
+  AllowAllInboundTrafic:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref Acl
+      CidrBlock: 0.0.0.0/0
+      RuleNumber: 10
+      RuleAction: Allow
+      Egress: false
+      Protocol: -1
+
+  AllowAllOutboundTrafic:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref Acl
+      CidrBlock: 0.0.0.0/0
+      RuleNumber: 10
+      RuleAction: Allow
+      Egress: true
+      Protocol: -1
+
+  PrivateSubnet1AclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      NetworkAclId: !Ref Acl
+
+  PrivateSubnet2AclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      NetworkAclId: !Ref Acl
+
+Outputs:
+
+  VpcId:
+    Value: !Ref Vpc
+    Export:
+      Name: !Sub ${ProjectName}:${Identifier}-vpc
+
+  PublicRouteTable:
+    Value: !Ref PublicRT
+    Export:
+      Name: !Sub ${ProjectName}:${Identifier}-public-rt
+
+  PrivateRouteTable1:
+    Value: !Ref PrivateRT1
+    Export:
+      Name: !Sub ${ProjectName}:${Identifier}-private-rt-1
+
+  PrivateRouteTable2:
+    Value: !Ref PrivateRT2
+    Export:
+      Name: !Sub ${ProjectName}:${Identifier}-private-rt-2
+
+  PublicSubnetIds:
+    Description: List of the public subnets ids
+    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2 ] ]
+    Export:
+      Name: !Sub ${ProjectName}:${Identifier}-public-subnets
+
+  PrivateSubnetIds:
+    Description: List of the private subnets ids
+    Value: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ] ]
+    Export:
+      Name: !Sub ${ProjectName}:${Identifier}-private-subnets
+
+  PublicSubnet1Id:
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub ${ProjectName}:${Identifier}-public-subnet-1
+
+  PublicSubnet2Id:
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub ${ProjectName}:${Identifier}-public-subnet-2
+
+  PrivateSubnet1Id:
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub ${ProjectName}:${Identifier}-private-subnet-1
+
+  PrivateSubnet2Id:
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub ${ProjectName}:${Identifier}-private-subnet-2
+   

@@ -1,0 +1,71 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Casper node
+
+Parameters:
+
+  # StackType:
+  #   Type: String
+  #   Default: prod
+  #   AllowedValues: [ dev, prod ]
+  #   Description: >-
+  #     The type of the environment for this CloudFormation Stack. Possible values are 'dev' and 'prod'.
+  #   ConstraintDescription: Value must be dev or prod
+  #     The dev type disables some HA and redundancy features to reduce costs.
+
+  OwnerName:
+    Type: String
+    Description: An arbitrary tag name for the owner of these resources
+
+  ProjectName:
+    Type: String
+    Description: The name of the stack to which these resources belong
+
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name to append to resources names and tags
+
+Conditions:
+
+  Never: !Equals [ true, false ]
+
+Resources:
+
+  NullResource:
+    Type: Custom::NullResource
+    Condition: Never
+
+  Vpc:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./templates/network-2azs.yml
+      Parameters:
+        Identifier: !Sub casper-${Environment}
+        VpcCidr: 172.16.0.0/16
+        PublicSubnetsCidr: !Join [ ',', [ 172.16.0.0/20, 172.16.16.0/20 ] ]
+        PrivateSubnetsCidr: !Join [ ',', [ 172.16.32.0/20, 172.16.48.0/20 ] ]
+        SetNatGateway: false
+        NatGatewayHA: false
+        OwnerName: !Ref OwnerName
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+
+  CasperNode:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./templates/casper-node.yml
+      Parameters:
+        Identifier: !Sub casper-${Environment}
+        VpcId: !GetAtt  Vpc.Outputs.VpcId
+        SubnetIds: !GetAtt  Vpc.Outputs.PublicSubnetIds
+        InstanceType: t3.medium
+        # EbsVolumeSize: !Ref EbsVolumeSize
+        # OnDemandBaseCapacity: !Ref OnDemandBaseCapacity
+        # OnDemandPercentage: !Ref OnDemandPercentage
+        AmiId: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+        KeyName: ronaldo
+        OwnerName: !Ref OwnerName      
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
