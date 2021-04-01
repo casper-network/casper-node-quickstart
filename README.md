@@ -10,8 +10,7 @@ You can deploy the infrastructure by selecting one of the regions below, and cli
 
 |Region||
 |-|-|
-| us-east-1 | [![launch_stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=casper-node&templateURL=https://s3.us-west-2.amazonaws.com/nclouds-static-assets/casper-node.yml&region=us-west-2) |
-| us-west-2 | [![launch_stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=casper-node&templateURL=https://s3.us-west-2.amazonaws.com/nclouds-static-assets/casper-node.yml&region=us-west-2) |
+| us-west-2 | [![launch_stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=casper-node&templateURL=https://nclouds-cloudformation-templates.s3-us-west-2.amazonaws.com/casper/master.packaged.yml&region=us-west-2) |
 
 ### Manual Deployment
 
@@ -41,10 +40,20 @@ You can also download the CloudFormation templates and deploy the infrastructure
 
 ### Monitoring the Node
 
-An AWS CloudWatch dashboard is created as part of the infrastructure with some metrics about the node.
+An AWS CloudWatch dashboard is created as part of the infrastructure with some metrics about the node. You can access the dashboard using the [CloudWatch console](https://console.aws.amazon.com/cloudwatch/home?#dashboards:) or by opening the URL of the dashboard in the CloudFormation stack outputs.
+
+### Accessing the Node
+
+You can securely access the node using AWS Session Manager by opening the [console](https://console.aws.amazon.com/systems-manager/session-manager/sessions) and clicking on *Start Session*, then just select your instance and you will get access to the node through a terminal embbeded in the browser. *(Note: You can also access the node through your terminal by using the aws cli and the session manager plugin)*
 
 
-
-
+## Infrastructure
 
 ![casper](images/casper.png)
+
+The CloudFormation templates create the following components as part of the infrastructure:
+
+- A VPC with public and private subnets, and all the routing configuration.
+- A single node Auto Scaling Group that bootstraps a Casper node.
+- A CloudWatch dashboard with metrics to monitor the node.
+- Configuration to access the node through Session Manager.

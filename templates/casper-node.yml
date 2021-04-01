@@ -1,13 +1,14 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Creates a single instance Autoscaling Group
+  Creates a single instance Autoscaling Group running a
+  Casper Node.
 
 Parameters:
 
   Identifier:
     Type: String
-    Description: A name identifier for the ECS Cluster
+    Description: A name identifier for the resources
 
   VpcId:
     Type: AWS::EC2::VPC::Id
@@ -15,12 +16,12 @@ Parameters:
 
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: Choose which subnets this ECS cluster should be deployed to
+    Description: Choose which subnets the nodes should be deployed to
 
   InstanceType:
     Type: String
     Default: t3.medium
-    Description: Instance type for the nodes of the ECS cluster
+    Description: Instance type for the nodes
     AllowedValues: [ t2.nano, t2.micro, t2.small, t2.medium, t2.large, t2.xlarge, t2.2xlarge, t3a.nano, t3a.micro, t3a.small, t3a.medium, t3a.large, t3a.xlarge, t3a.2xlarge, t3.nano, t3.micro, t3.small, t3.medium, t3.large, t3.xlarge, t3.2xlarge, m5ad.large, m5ad.xlarge, m5ad.2xlarge, m5ad.4xlarge, m5ad.12xlarge, m5ad.24xlarge, m5a.large, m5a.xlarge, m5a.2xlarge, m5a.4xlarge, m5a.12xlarge, m5a.24xlarge, m5d.large, m5d.xlarge, m5d.2xlarge, m5d.4xlarge, m5d.12xlarge, m5d.24xlarge, m5d.metal, m5.large, m5.xlarge, m5.2xlarge, m5.4xlarge, m5.12xlarge, m5.24xlarge, m5.metal, m4.large, m4.xlarge, m4.2xlarge, m4.4xlarge, m4.10xlarge, m4.16xlarge, a1.medium, a1.large, a1.xlarge, a1.2xlarge, a1.4xlarge, c5n.large, c5n.xlarge, c5n.2xlarge, c5n.4xlarge, c5n.9xlarge, c5n.18xlarge, c5d.large, c5d.xlarge, c5d.2xlarge, c5d.4xlarge, c5d.9xlarge, c5d.18xlarge, c5.large, c5.xlarge, c5.2xlarge, c5.4xlarge, c5.9xlarge, c5.18xlarge, c4.large, c4.xlarge, c4.2xlarge, c4.4xlarge, c4.8xlarge, f1.2xlarge, f1.4xlarge, f1.16xlarge, g2.2xlarge, g2.8xlarge, g3s.xlarge, g3.4xlarge, g3.8xlarge, g3.16xlarge, p2.xlarge, p2.8xlarge, p2.16xlarge, p3.2xlarge, p3.8xlarge, p3.16xlarge, p3dn.24xlarge, r5ad.large, r5ad.xlarge, r5ad.2xlarge, r5ad.4xlarge, r5ad.12xlarge, r5ad.24xlarge, r5a.large, r5a.xlarge, r5a.2xlarge, r5a.4xlarge, r5a.12xlarge, r5a.24xlarge, r5d.large, r5d.xlarge, r5d.2xlarge, r5d.4xlarge, r5d.12xlarge, r5d.24xlarge, r5d.metal, r5.large, r5.xlarge, r5.2xlarge, r5.4xlarge, r5.12xlarge, r5.24xlarge, r5.metal, r4.large, r4.xlarge, r4.2xlarge, r4.4xlarge, r4.8xlarge, r4.16xlarge, x1.16xlarge, x1e.xlarge, x1e.2xlarge, x1e.4xlarge, x1e.8xlarge, x1e.16xlarge, x1e.32xlarge, x1.32xlarge, z1d.large, z1d.xlarge, z1d.2xlarge, z1d.3xlarge, z1d.6xlarge, z1d.12xlarge, z1d.metal, d2.xlarge, d2.2xlarge, d2.4xlarge, d2.8xlarge, i2.xlarge, i2.2xlarge, i2.4xlarge, i2.8xlarge, h1.2xlarge, h1.4xlarge, h1.8xlarge, h1.16xlarge, i3.large, i3.xlarge, i3.2xlarge, i3.4xlarge, i3.8xlarge, i3.16xlarge, i3.metal, i3en.large, i3en.xlarge, i3en.2xlarge, i3en.3xlarge, i3en.6xlarge, i3en.12xlarge, i3en.24xlarge ]
 
   EbsVolumeSize:
@@ -28,29 +29,20 @@ Parameters:
     Default: 40
     Description: Size of the EBS volume of the instances in GB
 
-  # OnDemandBaseCapacity:
-  #   Type: Number
-  #   Default: 0
-  #   Description: On Demand base capacity for the AutoScaling Group
-
-  # OnDemandPercentage:
-  #   Type: Number
-  #   Default: 100
-  #   Description: Percentage of On Demand and Spot instances to deploy above the base capacity
-
-  # SpotPrice:
-  #   Type: String
-  #   Default: 0.82
-  #   Description: Spot Instance Bidding Max Price
-
   AmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Default: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
     Description: Parameter Store path for the AMI Id
 
   KeyName:
-    Type: AWS::EC2::KeyPair::KeyName    
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances
+    Type: String
+    Default: ''
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
+
+  IpWhitelist:
+    Type: String
+    Default: ''
+    Description: IP to allow SSH access to the node. Used only if SSH access is enabled.
 
   #  ############### Tags ###############
 
@@ -70,6 +62,8 @@ Parameters:
 Conditions:
 
   Never: !Equals [ true, false ]
+
+  EnableSSH: !Not [ !Equals [ !Ref KeyName, '' ] ]
 
 Resources:
 
@@ -110,7 +104,8 @@ Resources:
       VpcId: !Ref VpcId
       GroupName: !Sub ${Identifier}-node
       GroupDescription: !Sub Security group for ${Identifier} nodes
-      SecurityGroupIngress: 
+      SecurityGroupIngress:
+      - !If [ EnableSSH, { IpProtocol: tcp, CidrIp: !Ref IpWhitelist, FromPort: 22, ToPort: 22 }, !Ref 'AWS::NoValue' ] 
       - { IpProtocol: tcp, CidrIp: "0.0.0.0/0", FromPort: 7777, ToPort: 7777 }
       - { IpProtocol: tcp, CidrIp: "0.0.0.0/0", FromPort: 8888, ToPort: 8888 }
       - { IpProtocol: tcp, CidrIp: "0.0.0.0/0", FromPort: 9999, ToPort: 9999 }
@@ -131,7 +126,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties: 
       LogGroupName: !Sub /${Identifier}
-      RetentionInDays: 7
+      RetentionInDays: 3
 
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -139,7 +134,7 @@ Resources:
       LaunchTemplateName: !Sub ${Identifier}-node
       LaunchTemplateData:
         ImageId: !Ref AmiId
-        KeyName: !Ref KeyName
+        KeyName: !If [ EnableSSH, !Ref KeyName, !Ref 'AWS::NoValue' ]
         InstanceType: !Ref InstanceType
         BlockDeviceMappings:
         - DeviceName: /dev/xvda
@@ -190,7 +185,7 @@ Resources:
                 sudo -u casper casper-client keygen /etc/casper/validator_keys;
                 logrotate -f /etc/logrotate.d/casper-node
                 systemctl start casper-node-launcher; sleep 5; systemctl start casper-node-launcher
-                systemctl status casper-node-launcher
+                systemctl status casper-node-launcher || true
 
             - path: /tmp/install-cloudwatch-agent.sh
               permissions: 0777
@@ -246,20 +241,19 @@ Resources:
 
             runcmd:
             - apt-get -y install python-setuptools
-            - mkdir aws-cfn-bootstrap-latest
-            - curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz | tar xz -C aws-cfn-bootstrap-latest --strip-components 1
-            - easy_install aws-cfn-bootstrap-latest
+            - wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            - python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
             - /tmp/install-cloudwatch-agent.sh
             - /tmp/install-casper-node-launcher.sh 0.9.3 0.3.1
-            - /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+            - /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
 
 
   AutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
-    # CreationPolicy:
-    #   ResourceSignal:
-    #     Count: 1
-    #     Timeout: PT5M
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT5M
     Properties:
       AutoScalingGroupName: !Sub ${Identifier}
       VPCZoneIdentifier: !Ref SubnetIds
@@ -304,131 +298,139 @@ Resources:
         Value: !Ref Environment
         PropagateAtLaunch: true
 
-  # Dashboard:
-  #   Type: AWS::CloudWatch::Dashboard
-  #   Properties: 
-  #     DashboardName: !Sub ${Identifier}
-  #     DashboardBody: !Sub |
-  #       {
-  #           "widgets": [
-  #               {
-  #                   "height": 6,
-  #                   "width": 6,
-  #                   "y": 3,
-  #                   "x": 12,
-  #                   "type": "metric",
-  #                   "properties": {
-  #                       "view": "timeSeries",
-  #                       "stacked": false,
-  #                       "metrics": [
-  #                           [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "${AutoScalingGroup}" ]
-  #                       ],
-  #                       "region": "${AWS::Region}",
-  #                       "period": 300,
-  #                       "title": "CPU"
-  #                   }
-  #               },
-  #               {
-  #                   "height": 3,
-  #                   "width": 12,
-  #                   "y": 0,
-  #                   "x": 0,
-  #                   "type": "text",
-  #                   "properties": {
-  #                       "markdown": "\n# Casper Node \n&nbsp;\n\nAccess Node: [button:Session Manager](https://console.aws.amazon.com/systems-manager/session-manager/start-session?region=${AWS::Region}#)\n"
-  #                   }
-  #               },
-  #               {
-  #                   "height": 6,
-  #                   "width": 6,
-  #                   "y": 9,
-  #                   "x": 12,
-  #                   "type": "metric",
-  #                   "properties": {
-  #                       "view": "timeSeries",
-  #                       "stacked": false,
-  #                       "metrics": [
-  #                           [ "AWS/EC2", "NetworkIn", "AutoScalingGroupName", "${AutoScalingGroup}" ],
-  #                           [ ".", "NetworkOut", ".", "." ]
-  #                       ],
-  #                       "region": "${AWS::Region}",
-  #                       "title": "Network"
-  #                   }
-  #               },
-  #               {
-  #                   "height": 6,
-  #                   "width": 6,
-  #                   "y": 9,
-  #                   "x": 18,
-  #                   "type": "metric",
-  #                   "properties": {
-  #                       "view": "timeSeries",
-  #                       "stacked": false,
-  #                       "metrics": [
-  #                           [ "AWS/EC2", "EBSReadBytes", "AutoScalingGroupName", "${AutoScalingGroup}" ],
-  #                           [ ".", "EBSWriteBytes", ".", "." ]
-  #                       ],
-  #                       "region": "${AWS::Region}",
-  #                       "title": "Disk IO"
-  #                   }
-  #               },
-  #               {
-  #                   "height": 6,
-  #                   "width": 6,
-  #                   "y": 3,
-  #                   "x": 18,
-  #                   "type": "metric",
-  #                   "properties": {
-  #                       "view": "timeSeries",
-  #                       "stacked": false,
-  #                       "metrics": [
-  #                           [ "CWAgent", "mem_used_percent", "AutoScalingGroupName", "${AutoScalingGroup}" ]
-  #                       ],
-  #                       "region": "${AWS::Region}",
-  #                       "title": "Memory"
-  #                   }
-  #               },
-  #               {
-  #                   "type": "log",
-  #                   "x": 0,
-  #                   "y": 3,
-  #                   "width": 12,
-  #                   "height": 12,
-  #                   "properties": {
-  #                       "query": "SOURCE '${LogGroup}' | fields @timestamp, level, @message",
-  #                       "region": "${AWS::Region}",
-  #                       "title": "Logs",
-  #                       "view": "table"
-  #                   }
-  #               },
-  #               {
-  #                   "type": "metric",
-  #                   "x": 12,
-  #                   "y": 0,
-  #                   "width": 12,
-  #                   "height": 3,
-  #                   "properties": {
-  #                       "metrics": [
-  #                           [ "AWS/EC2", "StatusCheckFailed", "AutoScalingGroupName", "${AutoScalingGroup}" ],
-  #                           [ ".", "StatusCheckFailed_System", ".", "." ],
-  #                           [ ".", "StatusCheckFailed_Instance", ".", "." ]
-  #                       ],
-  #                       "view": "singleValue",
-  #                       "region": "${AWS::Region}",
-  #                       "title": "Instance Checks",
-  #                       "period": 300,
-  #                       "stat": "Average"
-  #                   }
-  #               }
-  #           ]
-  #       }
+  Dashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties: 
+      DashboardName: !Sub ${Identifier}
+      DashboardBody: !Sub |
+        {
+            "widgets": [
+                {
+                    "height": 6,
+                    "width": 6,
+                    "y": 3,
+                    "x": 12,
+                    "type": "metric",
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "${AutoScalingGroup}" ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "period": 300,
+                        "title": "CPU"
+                    }
+                },
+                {
+                    "height": 3,
+                    "width": 12,
+                    "y": 0,
+                    "x": 0,
+                    "type": "text",
+                    "properties": {
+                        "markdown": "\n# Casper Node \n&nbsp;\n\nAccess Node: [button:Session Manager](https://console.aws.amazon.com/systems-manager/session-manager/start-session?region=${AWS::Region}#)\n"
+                    }
+                },
+                {
+                    "height": 6,
+                    "width": 6,
+                    "y": 9,
+                    "x": 12,
+                    "type": "metric",
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ "AWS/EC2", "NetworkIn", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+                            [ ".", "NetworkOut", ".", "." ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "title": "Network"
+                    }
+                },
+                {
+                    "height": 6,
+                    "width": 6,
+                    "y": 9,
+                    "x": 18,
+                    "type": "metric",
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ "AWS/EC2", "EBSReadBytes", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+                            [ ".", "EBSWriteBytes", ".", "." ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "title": "Disk IO"
+                    }
+                },
+                {
+                    "height": 6,
+                    "width": 6,
+                    "y": 3,
+                    "x": 18,
+                    "type": "metric",
+                    "properties": {
+                        "view": "timeSeries",
+                        "stacked": false,
+                        "metrics": [
+                            [ "CWAgent", "mem_used_percent", "AutoScalingGroupName", "${AutoScalingGroup}" ]
+                        ],
+                        "region": "${AWS::Region}",
+                        "title": "Memory"
+                    }
+                },
+                {
+                    "type": "log",
+                    "x": 0,
+                    "y": 3,
+                    "width": 12,
+                    "height": 12,
+                    "properties": {
+                        "query": "SOURCE '${LogGroup}' | fields @timestamp, level, @message",
+                        "region": "${AWS::Region}",
+                        "title": "Logs",
+                        "view": "table"
+                    }
+                },
+                {
+                    "type": "metric",
+                    "x": 12,
+                    "y": 0,
+                    "width": 12,
+                    "height": 3,
+                    "properties": {
+                        "metrics": [
+                            [ "AWS/EC2", "StatusCheckFailed", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+                            [ ".", "StatusCheckFailed_System", ".", "." ],
+                            [ ".", "StatusCheckFailed_Instance", ".", "." ]
+                        ],
+                        "view": "singleValue",
+                        "region": "${AWS::Region}",
+                        "title": "Instance Checks",
+                        "period": 300,
+                        "stat": "Average"
+                    }
+                }
+            ]
+        }
 
-# Outputs:
+Outputs:
 
-#   SecurityGroup:
-#     Description: Security group of the ECS nodes
-#     Value: !Ref SecurityGroup
+  SecurityGroup:
+    Description: Security group of the node
+    Value: !Ref SecurityGroup
     
-#   AutoScalingGroupName:
-#     Description: A reference to ECS AutoScaling Group Name    
-#     Value: !Ref AutoScalingGroup
+  AutoScalingGroupName:
+    Description: Name of the AutoScaling Group    
+    Value: !Ref AutoScalingGroup
+
+  DashboardName:
+    Description: CloudWatch Dashboard name
+    Value: !Ref Dashboard
+  
+  DashboardUrl:
+    Description: CloudWatch Dashboard URL
+    Value: !Sub https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${Dashboard}
