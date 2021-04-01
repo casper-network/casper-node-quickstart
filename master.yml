@@ -23,9 +23,9 @@ Metadata:
       - Environment
     ParameterLabels: 
       KeyName: 
-        default: Name of an existing EC2 KeyPair to enable SSH access to the instances. Leave blank to disable SSH access.
+        default: KeyName (Optional)
       IpWhitelist:
-        default: Which IP should be allowed for SSH access? (e.g. 1.2.3.4/32)
+        default: IpWhitelist (Required if SSH access is enabled)
 
 Parameters:
 
@@ -43,12 +43,12 @@ Parameters:
   KeyName:
     Type: String
     Default: ''
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances.
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. Leave blank to disable SSH access.
 
   IpWhitelist:
     Type: String
     Default: ''
-    Description: IP to allow SSH access to the node. Used only if you enable SSH access by selecting a Key Pair.
+    Description: IP to allow SSH access to the node. (e.g. 1.2.3.4/32)
 
   OwnerName:
     Type: String
