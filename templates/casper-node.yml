@@ -28,20 +28,20 @@ Parameters:
     Default: 40
     Description: Size of the EBS volume of the instances in GB
 
-  OnDemandBaseCapacity:
-    Type: Number
-    Default: 0
-    Description: On Demand base capacity for the AutoScaling Group
+  # OnDemandBaseCapacity:
+  #   Type: Number
+  #   Default: 0
+  #   Description: On Demand base capacity for the AutoScaling Group
 
-  OnDemandPercentage:
-    Type: Number
-    Default: 100
-    Description: Percentage of On Demand and Spot instances to deploy above the base capacity
+  # OnDemandPercentage:
+  #   Type: Number
+  #   Default: 100
+  #   Description: Percentage of On Demand and Spot instances to deploy above the base capacity
 
-  SpotPrice:
-    Type: String
-    Default: 0.82
-    Description: Spot Instance Bidding Max Price
+  # SpotPrice:
+  #   Type: String
+  #   Default: 0.82
+  #   Description: Spot Instance Bidding Max Price
 
   AmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
@@ -56,7 +56,6 @@ Parameters:
 
   OwnerName:
     Type: String
-    Default: nclouds
     Description: An arbitrary tag name for the owner of these resources
 
   ProjectName:
@@ -94,7 +93,7 @@ Resources:
           - sts:AssumeRole
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
-      - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -112,7 +111,7 @@ Resources:
       GroupName: !Sub ${Identifier}-node
       GroupDescription: !Sub Security group for ${Identifier} nodes
       SecurityGroupIngress: 
-      # - { IpProtocol: tcp, SourceSecurityGroupId: !Ref SourceSecurityGroupId, FromPort: 5432, ToPort: 5432 }
+      - { IpProtocol: tcp, CidrIp: "0.0.0.0/0", FromPort: 7777, ToPort: 7777 }
       - { IpProtocol: tcp, CidrIp: "0.0.0.0/0", FromPort: 8888, ToPort: 8888 }
       - { IpProtocol: tcp, CidrIp: "0.0.0.0/0", FromPort: 9999, ToPort: 9999 }
       - { IpProtocol: tcp, CidrIp: "0.0.0.0/0", FromPort: 35000, ToPort: 35000 }
@@ -127,6 +126,12 @@ Resources:
         Value: !Ref ProjectName
       - Key: Environment
         Value: !Ref Environment
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub /${Identifier}
+      RetentionInDays: 7
 
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -144,8 +149,8 @@ Resources:
         - !Ref SecurityGroup
         IamInstanceProfile: 
           Arn: !GetAtt InstanceProfile.Arn
-        # Monitoring: 
-        #   Enabled: true
+        Monitoring: 
+          Enabled: true
         TagSpecifications: 
         - ResourceType: instance
           Tags: 
@@ -174,22 +179,87 @@ Resources:
               content: |
                 #!/bin/bash -x
                 casperNodeLauncherVersion=${!1}
+                casperClientVersion=${!2}
+
+                curl -JLO https://bintray.com/casperlabs/debian/download_file?file_path=casper-client_0.9.3-0_amd64.deb
+                curl -JLO https://bintray.com/casperlabs/debian/download_file?file_path=casper-node-launcher_0.3.1-0_amd64.deb
+                apt install -y ./casper-client_0.9.3-0_amd64.deb ./casper-node-launcher_0.3.1-0_amd64.deb
+                sudo -u casper /etc/casper/pull_casper_node_version.sh 1_0_0 delta-11
+                sudo -u casper /etc/casper/config_from_example.sh 1_0_0
+                sed -i "/trusted_hash =/c\trusted_hash = '$(curl -s 18.144.176.168:8888/status | jq -r .last_added_block_info.hash | tr -d '\n')'" /etc/casper/1_0_0/config.toml
+                sudo -u casper casper-client keygen /etc/casper/validator_keys;
+                logrotate -f /etc/logrotate.d/casper-node
+                systemctl start casper-node-launcher; sleep 5; systemctl start casper-node-launcher
+                systemctl status casper-node-launcher
+
+            - path: /tmp/install-cloudwatch-agent.sh
+              permissions: 0777
+              content: |
+                #!/bin/bash -x
+
+                wget https://s3.amazonaws.com/amazoncloudwatch-agent/debian/amd64/latest/amazon-cloudwatch-agent.deb
+                dpkg -i -E ./amazon-cloudwatch-agent.deb
+                /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+
+            - path: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+              permissions: 0444
+              content: |
+                {
+                  "agent": {
+                    "debug": true
+                  },
+                  "logs": {
+                    "logs_collected": {
+                      "files": {
+                        "collect_list": [{
+                          "log_group_name": "${LogGroup}",
+                          "file_path": "/var/log/casper/casper-node.log",
+                          "log_stream_name": "{instance_id}/var/log/casper/casper-node.log",
+                          "timestamp_format": "%Y-%m-%dT%H:%M:%S"
+                        }]
+                      }
+                    }
+                  },
+                  "metrics": {
+                    "append_dimensions": {
+                      "AutoScalingGroupName": "${!aws:AutoScalingGroupName}"
+                    },
+                    "metrics_collected": {
+                      "mem": {
+                        "measurement": [
+                          "mem_used_percent"
+                        ]
+                      },
+                      "disk": {
+                        "measurement": [
+                          "disk_used_percent"
+                        ]
+                      },
+                      "swap": {
+                        "measurement": [
+                          "swap_used_percent"
+                        ]
+                      }
+                    }
+                  }
+                }
 
             runcmd:
-            - curl -JLO https://bintray.com/casperlabs/debian/download_file?file_path=casper-client_0.9.3-0_amd64.deb
-            - curl -JLO https://bintray.com/casperlabs/debian/download_file?file_path=casper-node-launcher_0.3.1-0_amd64.deb
-            - apt install -y ./casper-client_0.9.3-0_amd64.deb ./casper-node-launcher_0.3.1-0_amd64.deb
-            - sudo -u casper /etc/casper/pull_casper_node_version.sh 1_0_0 delta-11
-            - sudo -u casper /etc/casper/config_from_example.sh 1_0_0
-            - sed -i "/trusted_hash =/c\trusted_hash = '$(curl -s 18.144.176.168:8888/status | jq -r .last_added_block_info.hash | tr -d '\n')'" /etc/casper/1_0_0/config.toml
-            - sudo -u casper casper-client keygen /etc/casper/validator_keys
-            - logrotate -f /etc/logrotate.d/casper-node
-            - systemctl start casper-node-launcher; sleep 2
-            - systemctl status casper-node-launcher
+            - apt-get -y install python-setuptools
+            - mkdir aws-cfn-bootstrap-latest
+            - curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz | tar xz -C aws-cfn-bootstrap-latest --strip-components 1
+            - easy_install aws-cfn-bootstrap-latest
+            - /tmp/install-cloudwatch-agent.sh
+            - /tmp/install-casper-node-launcher.sh 0.9.3 0.3.1
+            - /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
 
 
   AutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
+    # CreationPolicy:
+    #   ResourceSignal:
+    #     Count: 1
+    #     Timeout: PT5M
     Properties:
       AutoScalingGroupName: !Sub ${Identifier}
       VPCZoneIdentifier: !Ref SubnetIds
@@ -199,17 +269,27 @@ Resources:
       MixedInstancesPolicy:
         InstancesDistribution: 
           OnDemandAllocationStrategy: prioritized
-          OnDemandBaseCapacity: !Ref OnDemandBaseCapacity
-          OnDemandPercentageAboveBaseCapacity: !Ref OnDemandPercentage
+          OnDemandBaseCapacity: 0
+          OnDemandPercentageAboveBaseCapacity: 100
           SpotAllocationStrategy: capacity-optimized
-          # SpotInstancePools: 20
           SpotMaxPrice: !Ref AWS::NoValue
         LaunchTemplate: 
           LaunchTemplateSpecification: 
             LaunchTemplateId: !Ref LaunchTemplate
             Version: !GetAtt LaunchTemplate.LatestVersionNumber
           Overrides: 
-            - InstanceType: !Ref InstanceType
+          - InstanceType: !Ref InstanceType
+      MetricsCollection:
+      - Granularity: 1Minute
+        Metrics:
+        - GroupMinSize
+        - GroupMaxSize
+        - GroupDesiredCapacity
+        - GroupInServiceInstances
+        - GroupPendingInstances
+        - GroupStandbyInstances
+        - GroupTerminatingInstances
+        - GroupTotalInstances
       Tags:
       - Key: Name
         Value: !Sub ${Identifier}
@@ -223,6 +303,125 @@ Resources:
       - Key: Environment
         Value: !Ref Environment
         PropagateAtLaunch: true
+
+  # Dashboard:
+  #   Type: AWS::CloudWatch::Dashboard
+  #   Properties: 
+  #     DashboardName: !Sub ${Identifier}
+  #     DashboardBody: !Sub |
+  #       {
+  #           "widgets": [
+  #               {
+  #                   "height": 6,
+  #                   "width": 6,
+  #                   "y": 3,
+  #                   "x": 12,
+  #                   "type": "metric",
+  #                   "properties": {
+  #                       "view": "timeSeries",
+  #                       "stacked": false,
+  #                       "metrics": [
+  #                           [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "${AutoScalingGroup}" ]
+  #                       ],
+  #                       "region": "${AWS::Region}",
+  #                       "period": 300,
+  #                       "title": "CPU"
+  #                   }
+  #               },
+  #               {
+  #                   "height": 3,
+  #                   "width": 12,
+  #                   "y": 0,
+  #                   "x": 0,
+  #                   "type": "text",
+  #                   "properties": {
+  #                       "markdown": "\n# Casper Node \n&nbsp;\n\nAccess Node: [button:Session Manager](https://console.aws.amazon.com/systems-manager/session-manager/start-session?region=${AWS::Region}#)\n"
+  #                   }
+  #               },
+  #               {
+  #                   "height": 6,
+  #                   "width": 6,
+  #                   "y": 9,
+  #                   "x": 12,
+  #                   "type": "metric",
+  #                   "properties": {
+  #                       "view": "timeSeries",
+  #                       "stacked": false,
+  #                       "metrics": [
+  #                           [ "AWS/EC2", "NetworkIn", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+  #                           [ ".", "NetworkOut", ".", "." ]
+  #                       ],
+  #                       "region": "${AWS::Region}",
+  #                       "title": "Network"
+  #                   }
+  #               },
+  #               {
+  #                   "height": 6,
+  #                   "width": 6,
+  #                   "y": 9,
+  #                   "x": 18,
+  #                   "type": "metric",
+  #                   "properties": {
+  #                       "view": "timeSeries",
+  #                       "stacked": false,
+  #                       "metrics": [
+  #                           [ "AWS/EC2", "EBSReadBytes", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+  #                           [ ".", "EBSWriteBytes", ".", "." ]
+  #                       ],
+  #                       "region": "${AWS::Region}",
+  #                       "title": "Disk IO"
+  #                   }
+  #               },
+  #               {
+  #                   "height": 6,
+  #                   "width": 6,
+  #                   "y": 3,
+  #                   "x": 18,
+  #                   "type": "metric",
+  #                   "properties": {
+  #                       "view": "timeSeries",
+  #                       "stacked": false,
+  #                       "metrics": [
+  #                           [ "CWAgent", "mem_used_percent", "AutoScalingGroupName", "${AutoScalingGroup}" ]
+  #                       ],
+  #                       "region": "${AWS::Region}",
+  #                       "title": "Memory"
+  #                   }
+  #               },
+  #               {
+  #                   "type": "log",
+  #                   "x": 0,
+  #                   "y": 3,
+  #                   "width": 12,
+  #                   "height": 12,
+  #                   "properties": {
+  #                       "query": "SOURCE '${LogGroup}' | fields @timestamp, level, @message",
+  #                       "region": "${AWS::Region}",
+  #                       "title": "Logs",
+  #                       "view": "table"
+  #                   }
+  #               },
+  #               {
+  #                   "type": "metric",
+  #                   "x": 12,
+  #                   "y": 0,
+  #                   "width": 12,
+  #                   "height": 3,
+  #                   "properties": {
+  #                       "metrics": [
+  #                           [ "AWS/EC2", "StatusCheckFailed", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+  #                           [ ".", "StatusCheckFailed_System", ".", "." ],
+  #                           [ ".", "StatusCheckFailed_Instance", ".", "." ]
+  #                       ],
+  #                       "view": "singleValue",
+  #                       "region": "${AWS::Region}",
+  #                       "title": "Instance Checks",
+  #                       "period": 300,
+  #                       "stat": "Average"
+  #                   }
+  #               }
+  #           ]
+  #       }
 
 # Outputs:
 
