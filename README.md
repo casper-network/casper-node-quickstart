@@ -46,6 +46,12 @@ An AWS CloudWatch dashboard is created as part of the infrastructure with some m
 
 You can securely access the node using AWS Session Manager by opening the [console](https://console.aws.amazon.com/systems-manager/session-manager/sessions) and clicking on *Start Session*, then just select your instance and you will get access to the node through a terminal embbeded in the browser. *(Note: You can also access the node through your terminal by using the aws cli and the session manager plugin)*
 
+### Delete Resources
+
+To completely delete all the resources created by the templates go to the [CloudFormation Console](https://console.aws.amazon.com/cloudformation/home), select your stack and delete it.
+
+![delete-stack](images/delete-stack.png)
+
 
 ## Infrastructure
 
@@ -54,6 +60,6 @@ You can securely access the node using AWS Session Manager by opening the [conso
 The CloudFormation templates create the following components as part of the infrastructure:
 
 - A VPC with public and private subnets, and all the routing configuration.
-- A single node Auto Scaling Group that bootstraps a Casper node.
+- A single instance Auto Scaling Group that bootstraps a Casper node.
 - A CloudWatch dashboard with metrics to monitor the node.
 - Configuration to access the node through Session Manager.
