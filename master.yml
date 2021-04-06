@@ -19,7 +19,7 @@ Metadata:
         default: Node Configuration
       Parameters: 
       - NetworkName
-      - NetwoekIp
+      - NetworkIp
       - CustomInitScript
     - 
       Label: 
