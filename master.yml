@@ -73,7 +73,7 @@ Parameters:
   CustomInitScript:
     Type: String
     Default: |
-      #!/bin/bash \n
+      #!/bin/bash -x \n
       echo Custom Init Script
     Description: A custom script to execute before the node initialization. (Represent new lines with \n character)
 

@@ -199,9 +199,10 @@ Resources:
                 sudo -u casper /etc/casper/config_from_example.sh 1_0_0
                 sed -i "/trusted_hash =/c\trusted_hash = '$(curl -s ${NetworkIp}:8888/status | jq -r .last_added_block_info.hash | tr -d '\n')'" /etc/casper/1_0_0/config.toml
                 sudo -u casper casper-client keygen /etc/casper/validator_keys;
-                logrotate -f /etc/logrotate.d/casper-node; sleep 5
-                systemctl start casper-node-launcher; sleep 5
-                systemctl status casper-node-launcher || true
+                logrotate -f /etc/logrotate.d/casper-node;
+                sleep 60;
+                systemctl start casper-node-launcher;
+                systemctl status casper-node-launcher;
 
             - path: /tmp/install-cloudwatch-agent.sh
               permissions: 0777
