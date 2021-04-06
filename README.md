@@ -44,7 +44,10 @@ An AWS CloudWatch dashboard is created as part of the infrastructure with some m
 
 ### Accessing the Node
 
-You can securely access the node using AWS Session Manager by opening the [console](https://console.aws.amazon.com/systems-manager/session-manager/sessions) and clicking on *Start Session*, then just select your instance and you will get access to the node through a terminal embbeded in the browser. *(Note: You can also access the node through your terminal by using the aws cli and the session manager plugin)*
+You can securely access the node in two ways:
+
+1. Using AWS Session Manager by opening the [console](https://console.aws.amazon.com/systems-manager/session-manager/sessions) and clicking on *Start Session*, then just select your instance and you will get access to the node through a terminal embbeded in the browser. *(Note: You can also access the node through your terminal by using the aws cli and the session manager plugin)*
+2. Using SSH: To enable SSH access to your node you have to provide the *KeyName* and *IpWhiteList* parameters in the template. The just go to the [EC2 Console](https://console.aws.amazon.com/ec2/v2/home?#Instances:search=casper), select the node and click on the *Connect* button, you can find the SSH tab there with sample commands to connect to the instance.
 
 ### Delete Resources
 
