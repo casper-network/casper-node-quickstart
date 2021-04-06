@@ -89,7 +89,7 @@ Parameters:
 
   Environment:
     Type: String
-    Default: dev
+    Default: main
     Description: Environment name to append to resources names and tags
 
 Conditions:
