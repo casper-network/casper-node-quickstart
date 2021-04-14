@@ -228,6 +228,12 @@ Resources:
                           "file_path": "/var/log/casper/casper-node.log",
                           "log_stream_name": "{instance_id}/var/log/casper/casper-node.log",
                           "timestamp_format": "%Y-%m-%dT%H:%M:%S"
+                        },
+                        {
+                          "log_group_name": "${LogGroup}",
+                          "file_path": "/var/log/casper/casper-node.stderr.log",
+                          "log_stream_name": "{instance_id}/var/log/casper/casper-node.stderr.log",
+                          "timestamp_format": "%Y-%m-%dT%H:%M:%S"
                         }]
                       }
                     }
