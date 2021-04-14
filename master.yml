@@ -18,8 +18,8 @@ Metadata:
       Label: 
         default: Node Configuration
       Parameters: 
-      - NetworkName
-      - NetworkIp
+      - CasperNetwork
+      - TrustedHashIp
       - CustomInitScript
     - 
       Label: 
@@ -60,15 +60,15 @@ Parameters:
 
   #  ############## Service #############
 
-  NetworkName:
+  CasperNetwork:
     Type: String
-    Default: delta-11
-    Description: Name of the network
+    Default: casper
+    Description: Name of the Casper network to join (e.g casper, casper-test)
 
-  NetworkIp:
+  TrustedHashIp:
     Type: String
     Default: '167.86.108.79'
-    Description: IP of the network
+    Description: IP used to obtain the trusted hash
 
   CustomInitScript:
     Type: String
@@ -130,8 +130,8 @@ Resources:
         AmiId: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
         KeyName: !Ref KeyName
         IpWhitelist: !Ref IpWhitelist
-        NetworkName: !Ref NetworkName
-        NetworkIp: !Ref NetworkIp
+        CasperNetwork: !Ref CasperNetwork
+        TrustedHashIp: !Ref TrustedHashIp
         CustomInitScript: !Ref CustomInitScript
         OwnerName: !Ref OwnerName      
         ProjectName: !Ref ProjectName
