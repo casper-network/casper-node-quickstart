@@ -1,8 +1,7 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Creates a single instance Autoscaling Group running a
-  Casper Node.
+  Creates a Casper Node running on EC2
 
 Parameters:
 
@@ -170,8 +169,6 @@ Resources:
             Value: !Ref ProjectName
           - Key: Environment
             Value: !Ref Environment
-          - Key: Datadog
-            Value: false
         UserData:
           Fn::Base64: !Sub |
             #cloud-config
@@ -311,7 +308,7 @@ Resources:
                   },
                   "metrics": {
                     "append_dimensions": {
-                      "AutoScalingGroupName": "${!aws:AutoScalingGroupName}"
+                      "InstanceId": "${!aws:InstanceId}"
                     },
                     "metrics_collected": {
                       "mem": {
@@ -340,58 +337,29 @@ Resources:
             - /tmp/install-cloudwatch-agent.sh
             - /tmp/custom-init-script.sh
             - /tmp/install-casper-node-launcher.sh 1_0_0 ${CasperNetwork}
-            - /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+            - /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Node --region ${AWS::Region}
 
 
-  AutoScalingGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
+  Node:
+    Type: AWS::EC2::Instance
     CreationPolicy:
       ResourceSignal:
         Count: 1
         Timeout: PT5M
     Properties:
-      AutoScalingGroupName: !Sub ${Identifier}
-      VPCZoneIdentifier: !Ref SubnetIds
-      MinSize: 1
-      MaxSize: 1
-      DesiredCapacity: 1
-      MixedInstancesPolicy:
-        InstancesDistribution: 
-          OnDemandAllocationStrategy: prioritized
-          OnDemandBaseCapacity: 0
-          OnDemandPercentageAboveBaseCapacity: 100
-          SpotAllocationStrategy: capacity-optimized
-          SpotMaxPrice: !Ref AWS::NoValue
-        LaunchTemplate: 
-          LaunchTemplateSpecification: 
-            LaunchTemplateId: !Ref LaunchTemplate
-            Version: !GetAtt LaunchTemplate.LatestVersionNumber
-          Overrides: 
-          - InstanceType: !Ref InstanceType
-      MetricsCollection:
-      - Granularity: 1Minute
-        Metrics:
-        - GroupMinSize
-        - GroupMaxSize
-        - GroupDesiredCapacity
-        - GroupInServiceInstances
-        - GroupPendingInstances
-        - GroupStandbyInstances
-        - GroupTerminatingInstances
-        - GroupTotalInstances
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      SubnetId: !Select [ 0, !Ref SubnetIds ]
       Tags:
       - Key: Name
         Value: !Sub ${Identifier}
-        PropagateAtLaunch: true
       - Key: Owner
         Value: !Ref OwnerName
-        PropagateAtLaunch: true
       - Key: ProjectName
         Value: !Ref ProjectName
-        PropagateAtLaunch: true
       - Key: Environment
         Value: !Ref Environment
-        PropagateAtLaunch: true
 
   Dashboard:
     Type: AWS::CloudWatch::Dashboard
@@ -410,7 +378,7 @@ Resources:
                         "view": "timeSeries",
                         "stacked": false,
                         "metrics": [
-                            [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "${AutoScalingGroup}" ]
+                            [ "AWS/EC2", "CPUUtilization", "InstanceId", "${Node}" ]
                         ],
                         "region": "${AWS::Region}",
                         "period": 300,
@@ -437,7 +405,7 @@ Resources:
                         "view": "timeSeries",
                         "stacked": false,
                         "metrics": [
-                            [ "AWS/EC2", "NetworkIn", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+                            [ "AWS/EC2", "NetworkIn", "InstanceId", "${Node}" ],
                             [ ".", "NetworkOut", ".", "." ]
                         ],
                         "region": "${AWS::Region}",
@@ -454,7 +422,7 @@ Resources:
                         "view": "timeSeries",
                         "stacked": false,
                         "metrics": [
-                            [ "AWS/EC2", "EBSReadBytes", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+                            [ "AWS/EC2", "EBSReadBytes", "InstanceId", "${Node}" ],
                             [ ".", "EBSWriteBytes", ".", "." ]
                         ],
                         "region": "${AWS::Region}",
@@ -471,7 +439,7 @@ Resources:
                         "view": "timeSeries",
                         "stacked": false,
                         "metrics": [
-                            [ "CWAgent", "mem_used_percent", "AutoScalingGroupName", "${AutoScalingGroup}" ]
+                            [ "CWAgent", "mem_used_percent", "InstanceId", "${Node}" ]
                         ],
                         "region": "${AWS::Region}",
                         "title": "Memory"
@@ -498,7 +466,7 @@ Resources:
                     "height": 3,
                     "properties": {
                         "metrics": [
-                            [ "AWS/EC2", "StatusCheckFailed", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+                            [ "AWS/EC2", "StatusCheckFailed", "InstanceId", "${Node}" ],
                             [ ".", "StatusCheckFailed_System", ".", "." ],
                             [ ".", "StatusCheckFailed_Instance", ".", "." ]
                         ],
@@ -517,10 +485,6 @@ Outputs:
   SecurityGroup:
     Description: Security group of the node
     Value: !Ref SecurityGroup
-    
-  AutoScalingGroupName:
-    Description: Name of the AutoScaling Group    
-    Value: !Ref AutoScalingGroup
 
   DashboardName:
     Description: CloudWatch Dashboard name
