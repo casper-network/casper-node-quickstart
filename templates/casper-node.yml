@@ -149,9 +149,10 @@ Resources:
         KeyName: !If [ EnableSSH, !Ref KeyName, !Ref 'AWS::NoValue' ]
         InstanceType: !Ref InstanceType
         BlockDeviceMappings:
-        - DeviceName: /dev/xvda
+        - DeviceName: /dev/sda1
           Ebs:
             VolumeSize: !Ref EbsVolumeSize
+            Encrypted: true
         SecurityGroupIds: 
         - !Ref SecurityGroup
         IamInstanceProfile: 
