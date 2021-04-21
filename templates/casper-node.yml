@@ -48,9 +48,9 @@ Parameters:
     Type: String
     Description: Name of the Casper network to join (e.g casper, casper-test)
 
-  TrustedHashIp:
+  TrustedHash:
     Type: String
-    Description: IP used to obtain the trusted hash
+    Description: Trusted Hash from a valid node status endpoint or cspr.live site.
 
   CustomInitScript:
     Type: String
@@ -248,20 +248,13 @@ Resources:
                 #!/bin/bash -x
                 CASPER_VERSION=${!1}
                 CASPER_NETWORK=${!2}
+                TRUSTED_HASH=${!3}
 
                 sudo -u casper /etc/casper/pull_casper_node_version.sh $CASPER_NETWORK.conf $CASPER_VERSION
                 sudo -u casper /etc/casper/config_from_example.sh $CASPER_VERSION
 
-                # Get validator IP
-                KNOWN_ADDRESSES=$(sudo -u casper cat /etc/casper/$CASPER_VERSION/config.toml | grep known_addresses)
-                KNOWN_VALIDATOR_IPS=$(grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' <<< "$KNOWN_ADDRESSES")
-                IFS=' ' read -r KNOWN_VALIDATOR_IP _REST <<< "$KNOWN_VALIDATOR_IPS"
-
-                echo Validator IP $KNOWN_VALIDATOR_IP
-
                 # Get trusted_hash into config.toml
-                TRUSTED_HASH=$(curl -s $KNOWN_VALIDATOR_IP:8888/status | jq -r .last_added_block_info.hash | tr -d '\n')
-                if [ "$TRUSTED_HASH" != "null" ]; then sudo -u casper sed -i "/trusted_hash =/c\trusted_hash = '$TRUSTED_HASH'" /etc/casper/$CASPER_VERSION/config.toml; fi
+                sudo -u casper sed -i "/trusted_hash =/c\trusted_hash = '$TRUSTED_HASH'" /etc/casper/$CASPER_VERSION/config.toml
 
                 # Generate Key
                 sudo -u casper casper-client keygen /etc/casper/validator_keys;
@@ -336,7 +329,7 @@ Resources:
             - python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
             - /tmp/install-cloudwatch-agent.sh
             - /tmp/custom-init-script.sh
-            - /tmp/install-casper-node-launcher.sh 1_0_0 ${CasperNetwork}
+            - /tmp/install-casper-node-launcher.sh 1_0_0 ${CasperNetwork} ${TrustedHash}
             - /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Node --region ${AWS::Region}
 
 

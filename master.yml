@@ -19,7 +19,7 @@ Metadata:
         default: Node Configuration
       Parameters: 
       - CasperNetwork
-      - TrustedHashIp
+      - TrustedHash
       - CustomInitScript
     - 
       Label: 
@@ -65,10 +65,9 @@ Parameters:
     Default: casper
     Description: Name of the Casper network to join (e.g casper, casper-test)
 
-  TrustedHashIp:
+  TrustedHash:
     Type: String
-    Default: '167.86.108.79'
-    Description: IP used to obtain the trusted hash
+    Description: Trusted Hash from a valid node status endpoint or cspr.live site.
 
   CustomInitScript:
     Type: String
@@ -131,7 +130,7 @@ Resources:
         KeyName: !Ref KeyName
         IpWhitelist: !Ref IpWhitelist
         CasperNetwork: !Ref CasperNetwork
-        TrustedHashIp: !Ref TrustedHashIp
+        TrustedHash: !Ref TrustedHash
         CustomInitScript: !Ref CustomInitScript
         OwnerName: !Ref OwnerName      
         ProjectName: !Ref ProjectName
