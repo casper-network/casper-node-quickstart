@@ -33,7 +33,8 @@ You can also download the CloudFormation templates and deploy the infrastructure
     ```console
     $ aws cloudformation deploy \
         --template-file master.packaged.yml \
-        --stack-name <STACK_NAME>   
+        --capabilities CAPABILITY_NAMED_IAM \
+        --stack-name <STACK_NAME>
     ```
 
     Choose a meaningful name for you CloudFormation Stack and deploy the infrastructure.
