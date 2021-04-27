@@ -264,6 +264,7 @@ Resources:
                 logrotate -f /etc/logrotate.d/casper-node;
                 sleep 60;
                 systemctl start casper-node-launcher;
+                sleep 2;
                 systemctl status casper-node-launcher;
 
             - path: /tmp/install-cloudwatch-agent.sh
