@@ -34,10 +34,13 @@ You can also download the CloudFormation templates and deploy the infrastructure
     $ aws cloudformation deploy \
         --template-file master.packaged.yml \
         --capabilities CAPABILITY_NAMED_IAM \
+        --parameter-overrides TrustedHash=<TRUSTED_HASH> OwnerName=<OWNER_NAME> ProjectName=<PROJECT_NAME> \
         --stack-name <STACK_NAME>
     ```
 
-    Choose a meaningful name for you CloudFormation Stack and deploy the infrastructure.
+    Choose a meaningful name for you CloudFormation Stack and deploy the infrastructure. 
+    *(Note: With the `--parameter-overrides` flag you can specify any of the supported parameters in the template)*
+
 
 ### Monitoring the Node
 
