@@ -445,11 +445,24 @@ Resources:
                     "x": 0,
                     "y": 3,
                     "width": 12,
-                    "height": 12,
+                    "height": 6,
                     "properties": {
-                        "query": "SOURCE '${LogGroup}' | fields @timestamp, level, @message",
+                        "query": "SOURCE '${LogGroup}' | filter @logStream = \"${Node}/var/log/casper/casper-node.log\" | fields @timestamp, level, @message",
                         "region": "${AWS::Region}",
                         "title": "Logs",
+                        "view": "table"
+                    }
+                },
+                {
+                    "type": "log",
+                    "x": 0,
+                    "y": 9,
+                    "width": 12,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE '${LogGroup}' | filter @logStream = \"${Node}/var/log/casper/casper-node.stderr.log\" | fields @timestamp, @message",
+                        "region": "${AWS::Region}",
+                        "title": "Error Logs",
                         "view": "table"
                     }
                 },

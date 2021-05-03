@@ -81,16 +81,10 @@ Parameters:
   OwnerName:
     Type: String
     Description: An arbitrary tag name for the owner of these resources
-    AllowedPattern: ^[a-z0-9]*$
-    MaxLength: 20
-    ConstraintDescription: Must be no longer than 20 alpha-numeric characters and must be lowercase.
 
   ProjectName:
     Type: String
     Description: The name of the stack to which these resources belong
-    AllowedPattern: ^[a-z0-9]*$
-    MaxLength: 20
-    ConstraintDescription: Must be no longer than 20 alpha-numeric characters and must be lowercase.
 
   Environment:
     Type: String
