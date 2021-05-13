@@ -1,8 +1,7 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Creates a single instance Autoscaling Group running a
-  Casper Node.
+  Creates a Casper Node running on EC2
 
 Parameters:
 
@@ -45,13 +44,13 @@ Parameters:
 
   #  ############## Service #############
 
-  NetworkName:
+  CasperNetwork:
     Type: String
-    Description: Name of the network
+    Description: Name of the Casper network to join (e.g casper, casper-test)
 
-  NetworkIp:
+  TrustedHash:
     Type: String
-    Description: IP of the network
+    Description: Trusted Hash from a valid node status endpoint or cspr.live site.
 
   CustomInitScript:
     Type: String
@@ -150,9 +149,10 @@ Resources:
         KeyName: !If [ EnableSSH, !Ref KeyName, !Ref 'AWS::NoValue' ]
         InstanceType: !Ref InstanceType
         BlockDeviceMappings:
-        - DeviceName: /dev/xvda
+        - DeviceName: /dev/sda1
           Ebs:
             VolumeSize: !Ref EbsVolumeSize
+            Encrypted: true
         SecurityGroupIds: 
         - !Ref SecurityGroup
         IamInstanceProfile: 
@@ -170,8 +170,6 @@ Resources:
             Value: !Ref ProjectName
           - Key: Environment
             Value: !Ref Environment
-          - Key: Datadog
-            Value: false
         UserData:
           Fn::Base64: !Sub |
             #cloud-config
@@ -179,7 +177,67 @@ Resources:
             repo_upgrade: all
 
             packages:
+            - dnsutils
             - jq
+            - casper-node-launcher
+            - casper-client
+
+            apt:
+              sources:
+                casper:
+                  source: "deb https://repo.casperlabs.io/releases bionic main"
+                  key: |
+                    -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+                    mQINBFyrstcBEADT14M6KRvZ2Rg4rTolR3cnN4dMBpfjWNJweRF8lJPUJtuSaS0o
+                    ATPnOUWxj/d27WhVSO5EZFP3y2p/2hAiuuD8jRcr3gxwD6x1Bcl5BN9Z/GG9/lF2
+                    TeciLEiHHqJYLmbSxsgcPXzQSd4u+hD606cw4Bwu2gt05xkWFsyk8TJIzbYcaIAK
+                    FNJG6rq5XObwrL4vIFt1VCXqCq6VNJCHL5irRwT+JlhmNySe4Q5SJhkjdNIfITIb
+                    YBi9p/ExrCl0D0ULsv2mVilZW1OzeuNxr5lWDltKS5zXiYRnsQdrhl+oMwbEoksg
+                    pXB3VYLQkeAQz0M6lNMZramA3oP4ZZXzD65jcREaViX/rG5tbUVqKfcMdYlovKeh
+                    CxUi3danFREMT2N8fkRzRG6sZFfOSPH+33Opb6AHjcB2/uSQPCwVxw4vr8r4ay90
+                    JKEd1dx5+Q36AYEm6QFX9o27GtEUJiEhOcQjRvKzkEgGW8fJgAJWRc+P6zq55n3l
+                    2wCMAXLRrK9PvhFLCaJ6QTkQmtw+2y9p8zTVcNgAzkmki7zatpcoTO4IZyjnGK8v
+                    h7wzs7ZDFp2FQaE+ipZAPoZEVuqE4Y7bbSqgXQVwbziEXSYPBnfmsZJOHKvwrFyE
+                    ebwLctK8fYd1oPXOLY/Zx4nGn0KrQEWnc2tGCleK3cHIloMrWUNPpj0nCwARAQAB
+                    tB9jYXNwZXJsYWJzIDxpbmZvQGNhc3BlcmxhYnMuaW8+iQJOBBMBCAA4FiEEBgQS
+                    aTlbD77YeiTGmAbcrdHLR/IFAlyrstcCGwMFCwkIBwIGFQoJCAsCBBYCAwECHgEC
+                    F4AACgkQmAbcrdHLR/JpsQ/+MnLBoB37teIK+5HvWMsIHiQWliz3JBeKTLO+sbz4
+                    q+5BgaFJxkgQcb26YDS4mXL0pn+jhNvatl7JX/x5SLotl3NV+0sVVwhanWYlukw0
+                    dxq8gW0I9W+9QjXDfP+VwrdF3kiNoL6Wgu4w5ZU5IqFHy3ysotwVX6vR95V4tso/
+                    uh5rFqi4ZpxXdNSQVGp5JfTbaG06CbJF0IJ5xTWpkmBzMLqOSwk+GvMzq7DB6Mwo
+                    GoUzb4hSbVSaVho5fsZhRyPTXL7Sg51VZVufsdZNyQO/Ww2LWx94Qez7Ws5Vg3me
+                    odgRvbv8kFMBBbHgemRMKeq8sXe6ZqQwX7BE82DbLUrlN4MfcN9SyMvmMI3WTNK1
+                    03KsgyILSQKNDx5+sn8JYeicwVKfuRV3a6N+Qq+PT/OQyQMO8w09FQd572FU5ENw
+                    5np7ToOxaR2MzhBye1QBAKDx1KtQ4kfOFz3CLBQKabhnJJYtRRYWnbpKKhtsohxU
+                    cvNAZWaUaAjir6gbwPtvXpprFAwl6VdYOz2D1zIWtp8Q310VfUYZwhZrRRI7leVC
+                    tfcYN2pOLOo7Aroq3R2U3voJ17zMZ3uTbGIcmLHC/NDa9QN2Fk1sBFRLeco8iGoB
+                    z5BjEKxDYPg5suIpmaWe+cgn+zJkMBiircseoEkFCDWY4V3RCEWZK6vC51WQhwe5
+                    vEC5Ag0EXKuy1wEQALxrgT30BoJ6qUMQBmhguRc9x65ugU3OYuqKxmHbBBtGmQBf
+                    dDzh3D7luY26qyrFoFLAt3ntMO6ZTa67WrmJGw6Cv/h3nW6r+/0vBUz6OS+eUwjN
+                    JMvnxDI0RBmf6Tn6iDCaEXMQyRbiCQTt+kCFVCBng+bFFohi/x7Ent0QgZnyQabc
+                    EVWVGYLjYJiXldGOVMMJDbSwKeLO+ZSOGc31JbZ5NRFtjGAPyIcwWKljK3cTHS4Z
+                    kUVPtvZaHBUrNnrXlA0dkwODFXnHteXLJlcVM0olVKGFbHnXqnk0VNLkVpUBC7TA
+                    wgHI4q047Mx8K+FuL2rvkxeGR8watAjFNqDMgo8ERcYFyOu9COH7d7+C9nCsI5mw
+                    zKumhox2RYht5x62HjDS+i3VZMFHVH+bA/WaGbUCTsTAtJPzZuDsGTvRi41U1Ar4
+                    pCAK54hvcKBUmb+ZnQxoLEbOy43UqjyDk/zSII61c3Looy+tam1DscvSqW5aCSJ8
+                    NC2txSE/g6JJoM6c4zbf9/UWykR3FKbPC89zs8vF6QgKZvSduipS/MfXPfljC+hg
+                    0i+HalOqq4z5ZahcsvCSoiUxRyzKROpZFtLn7CQQmsGP4NFeWlU8Wa6NX2BT6Kdx
+                    hnWhmpWyX34IEJpT81I3P80R958hI3+n/SvvPlz99NngsrXAgq+dVGHziC45ABEB
+                    AAGJAjYEGAEIACAWIQQGBBJpOVsPvth6JMaYBtyt0ctH8gUCXKuy1wIbDAAKCRCY
+                    Btyt0ctH8ncGD/9HFMqHai1y9hT+1iJg7SOcftPFYIbLmCmLNctnowMdz3lpQWum
+                    0hfOIeH/Bp9AEZ78mJyi9ubm+sH98hrPg62EWZTBMZevGXpwvFdnHEjeM+ECRF1i
+                    k6SZTT51MDciGfOggVF81DqYzGPLUfuD3tbSujA5obz2oxsYnIAW080VNzYgKWie
+                    ot9A23XD7nvljPPSaPVuYU2ecxtgcwvIrHuMtAZhD914VHN/jCEpG84VatK8KL3/
+                    BdtsTjhqYzUiwsl9WsrrlQLWpslyn/asvxCBPrK3aRrdEHFrd+fEwrqRAjGCA+SV
+                    2+cHqPdFTLUHxnXxYzSNXhJ+YOUkrMuDAmzHdD5QHFi91gjhiCTgQnqYeYzCD875
+                    6Q6O/IGMmkvpBX1k1wi21Sa6Pvf1Iz6sTeTe7YzAQcA4SFE3LQ9FsQio66WETHOz
+                    V//6dikSmbj7gbDVCaagEY0SBdQfsVgLa9kOE9WY2CZfVn0Nr9TKldA78x/wybnH
+                    XBlkaA5hgiX6neVrx7T43sZLrfdvn6ppuC5ahQ7yK/PdqDBJ6JlTIERAxa/otjcO
+                    WiOOK1lVd9OQJ8Jut1FDY2vTtaZ6oUDKw7DHU/nrOLex7PnQsL/ZFfOKPv1Qs7rf
+                    HNl7eclBNEGsZAeTSKNSBHcbVC0txMZTjd+s3lj/Ddd0xU5aZYhujK3STg==
+                    =c1w/
+                    -----END PGP PUBLIC KEY BLOCK-----
 
             write_files:
             - path: /tmp/custom-init-script.sh
@@ -189,19 +247,24 @@ Resources:
               permissions: 0777
               content: |
                 #!/bin/bash -x
-                casperNodeLauncherVersion=${!1}
-                casperClientVersion=${!2}
+                CASPER_VERSION=${!1}
+                CASPER_NETWORK=${!2}
+                TRUSTED_HASH=${!3}
 
-                curl -JLO https://bintray.com/casperlabs/debian/download_file?file_path=casper-client_0.9.3-0_amd64.deb
-                curl -JLO https://bintray.com/casperlabs/debian/download_file?file_path=casper-node-launcher_0.3.1-0_amd64.deb
-                apt install -y ./casper-client_0.9.3-0_amd64.deb ./casper-node-launcher_0.3.1-0_amd64.deb
-                sudo -u casper /etc/casper/pull_casper_node_version.sh 1_0_0 ${NetworkName}
-                sudo -u casper /etc/casper/config_from_example.sh 1_0_0
-                sed -i "/trusted_hash =/c\trusted_hash = '$(curl -s ${NetworkIp}:8888/status | jq -r .last_added_block_info.hash | tr -d '\n')'" /etc/casper/1_0_0/config.toml
+                sudo -u casper /etc/casper/pull_casper_node_version.sh $CASPER_NETWORK.conf $CASPER_VERSION
+                sudo -u casper /etc/casper/config_from_example.sh $CASPER_VERSION
+
+                # Get trusted_hash into config.toml
+                sudo -u casper sed -i "/trusted_hash =/c\trusted_hash = '$TRUSTED_HASH'" /etc/casper/$CASPER_VERSION/config.toml
+
+                # Generate Key
                 sudo -u casper casper-client keygen /etc/casper/validator_keys;
+
+                # Start Node
                 logrotate -f /etc/logrotate.d/casper-node;
                 sleep 60;
                 systemctl start casper-node-launcher;
+                sleep 2;
                 systemctl status casper-node-launcher;
 
             - path: /tmp/install-cloudwatch-agent.sh
@@ -209,7 +272,7 @@ Resources:
               content: |
                 #!/bin/bash -x
 
-                wget https://s3.amazonaws.com/amazoncloudwatch-agent/debian/amd64/latest/amazon-cloudwatch-agent.deb
+                wget -q https://s3.amazonaws.com/amazoncloudwatch-agent/debian/amd64/latest/amazon-cloudwatch-agent.deb
                 dpkg -i -E ./amazon-cloudwatch-agent.deb
                 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 
@@ -228,13 +291,19 @@ Resources:
                           "file_path": "/var/log/casper/casper-node.log",
                           "log_stream_name": "{instance_id}/var/log/casper/casper-node.log",
                           "timestamp_format": "%Y-%m-%dT%H:%M:%S"
+                        },
+                        {
+                          "log_group_name": "${LogGroup}",
+                          "file_path": "/var/log/casper/casper-node.stderr.log",
+                          "log_stream_name": "{instance_id}/var/log/casper/casper-node.stderr.log",
+                          "timestamp_format": "%Y-%m-%dT%H:%M:%S"
                         }]
                       }
                     }
                   },
                   "metrics": {
                     "append_dimensions": {
-                      "AutoScalingGroupName": "${!aws:AutoScalingGroupName}"
+                      "InstanceId": "${!aws:InstanceId}"
                     },
                     "metrics_collected": {
                       "mem": {
@@ -262,59 +331,30 @@ Resources:
             - python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
             - /tmp/install-cloudwatch-agent.sh
             - /tmp/custom-init-script.sh
-            - /tmp/install-casper-node-launcher.sh 0.9.3 0.3.1
-            - /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AutoScalingGroup --region ${AWS::Region}
+            - /tmp/install-casper-node-launcher.sh 1_0_0 ${CasperNetwork} ${TrustedHash}
+            - /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Node --region ${AWS::Region}
 
 
-  AutoScalingGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
+  Node:
+    Type: AWS::EC2::Instance
     CreationPolicy:
       ResourceSignal:
         Count: 1
         Timeout: PT5M
     Properties:
-      AutoScalingGroupName: !Sub ${Identifier}
-      VPCZoneIdentifier: !Ref SubnetIds
-      MinSize: 1
-      MaxSize: 1
-      DesiredCapacity: 1
-      MixedInstancesPolicy:
-        InstancesDistribution: 
-          OnDemandAllocationStrategy: prioritized
-          OnDemandBaseCapacity: 0
-          OnDemandPercentageAboveBaseCapacity: 100
-          SpotAllocationStrategy: capacity-optimized
-          SpotMaxPrice: !Ref AWS::NoValue
-        LaunchTemplate: 
-          LaunchTemplateSpecification: 
-            LaunchTemplateId: !Ref LaunchTemplate
-            Version: !GetAtt LaunchTemplate.LatestVersionNumber
-          Overrides: 
-          - InstanceType: !Ref InstanceType
-      MetricsCollection:
-      - Granularity: 1Minute
-        Metrics:
-        - GroupMinSize
-        - GroupMaxSize
-        - GroupDesiredCapacity
-        - GroupInServiceInstances
-        - GroupPendingInstances
-        - GroupStandbyInstances
-        - GroupTerminatingInstances
-        - GroupTotalInstances
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      SubnetId: !Select [ 0, !Ref SubnetIds ]
       Tags:
       - Key: Name
         Value: !Sub ${Identifier}
-        PropagateAtLaunch: true
       - Key: Owner
         Value: !Ref OwnerName
-        PropagateAtLaunch: true
       - Key: ProjectName
         Value: !Ref ProjectName
-        PropagateAtLaunch: true
       - Key: Environment
         Value: !Ref Environment
-        PropagateAtLaunch: true
 
   Dashboard:
     Type: AWS::CloudWatch::Dashboard
@@ -333,7 +373,7 @@ Resources:
                         "view": "timeSeries",
                         "stacked": false,
                         "metrics": [
-                            [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "${AutoScalingGroup}" ]
+                            [ "AWS/EC2", "CPUUtilization", "InstanceId", "${Node}" ]
                         ],
                         "region": "${AWS::Region}",
                         "period": 300,
@@ -360,7 +400,7 @@ Resources:
                         "view": "timeSeries",
                         "stacked": false,
                         "metrics": [
-                            [ "AWS/EC2", "NetworkIn", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+                            [ "AWS/EC2", "NetworkIn", "InstanceId", "${Node}" ],
                             [ ".", "NetworkOut", ".", "." ]
                         ],
                         "region": "${AWS::Region}",
@@ -377,7 +417,7 @@ Resources:
                         "view": "timeSeries",
                         "stacked": false,
                         "metrics": [
-                            [ "AWS/EC2", "EBSReadBytes", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+                            [ "AWS/EC2", "EBSReadBytes", "InstanceId", "${Node}" ],
                             [ ".", "EBSWriteBytes", ".", "." ]
                         ],
                         "region": "${AWS::Region}",
@@ -394,7 +434,7 @@ Resources:
                         "view": "timeSeries",
                         "stacked": false,
                         "metrics": [
-                            [ "CWAgent", "mem_used_percent", "AutoScalingGroupName", "${AutoScalingGroup}" ]
+                            [ "CWAgent", "mem_used_percent", "InstanceId", "${Node}" ]
                         ],
                         "region": "${AWS::Region}",
                         "title": "Memory"
@@ -405,11 +445,24 @@ Resources:
                     "x": 0,
                     "y": 3,
                     "width": 12,
-                    "height": 12,
+                    "height": 6,
                     "properties": {
-                        "query": "SOURCE '${LogGroup}' | fields @timestamp, level, @message",
+                        "query": "SOURCE '${LogGroup}' | filter @logStream = \"${Node}/var/log/casper/casper-node.log\" | fields @timestamp, level, @message",
                         "region": "${AWS::Region}",
                         "title": "Logs",
+                        "view": "table"
+                    }
+                },
+                {
+                    "type": "log",
+                    "x": 0,
+                    "y": 9,
+                    "width": 12,
+                    "height": 6,
+                    "properties": {
+                        "query": "SOURCE '${LogGroup}' | filter @logStream = \"${Node}/var/log/casper/casper-node.stderr.log\" | fields @timestamp, @message",
+                        "region": "${AWS::Region}",
+                        "title": "Error Logs",
                         "view": "table"
                     }
                 },
@@ -421,7 +474,7 @@ Resources:
                     "height": 3,
                     "properties": {
                         "metrics": [
-                            [ "AWS/EC2", "StatusCheckFailed", "AutoScalingGroupName", "${AutoScalingGroup}" ],
+                            [ "AWS/EC2", "StatusCheckFailed", "InstanceId", "${Node}" ],
                             [ ".", "StatusCheckFailed_System", ".", "." ],
                             [ ".", "StatusCheckFailed_Instance", ".", "." ]
                         ],
@@ -440,10 +493,6 @@ Outputs:
   SecurityGroup:
     Description: Security group of the node
     Value: !Ref SecurityGroup
-    
-  AutoScalingGroupName:
-    Description: Name of the AutoScaling Group    
-    Value: !Ref AutoScalingGroup
 
   DashboardName:
     Description: CloudWatch Dashboard name

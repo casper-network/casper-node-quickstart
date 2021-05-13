@@ -18,8 +18,8 @@ Metadata:
       Label: 
         default: Node Configuration
       Parameters: 
-      - NetworkName
-      - NetworkIp
+      - CasperNetwork
+      - TrustedHash
       - CustomInitScript
     - 
       Label: 
@@ -40,7 +40,7 @@ Parameters:
 
   InstanceType:
     Type: String
-    Default: r5.large
+    Default: r5.xlarge
     Description: Instance type for the nodes
 
   EbsVolumeSize:
@@ -60,15 +60,14 @@ Parameters:
 
   #  ############## Service #############
 
-  NetworkName:
+  CasperNetwork:
     Type: String
-    Default: delta-11
-    Description: Name of the network
+    Default: casper-test
+    Description: Name of the Casper network to join (e.g casper, casper-test)
 
-  NetworkIp:
+  TrustedHash:
     Type: String
-    Default: '167.86.108.79'
-    Description: IP of the network
+    Description: Trusted Hash from a valid node status endpoint or cspr.live site.
 
   CustomInitScript:
     Type: String
@@ -91,6 +90,9 @@ Parameters:
     Type: String
     Default: main
     Description: Environment name to append to resources names and tags
+    AllowedPattern: ^[a-z0-9]*$
+    MaxLength: 10
+    ConstraintDescription: Must be no longer than 10 alpha-numeric characters and must be lowercase.
 
 Conditions:
 
@@ -130,8 +132,8 @@ Resources:
         AmiId: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
         KeyName: !Ref KeyName
         IpWhitelist: !Ref IpWhitelist
-        NetworkName: !Ref NetworkName
-        NetworkIp: !Ref NetworkIp
+        CasperNetwork: !Ref CasperNetwork
+        TrustedHash: !Ref TrustedHash
         CustomInitScript: !Ref CustomInitScript
         OwnerName: !Ref OwnerName      
         ProjectName: !Ref ProjectName
