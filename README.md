@@ -1,4 +1,4 @@
-# Casper Node Infrastructure
+# Casper Node Quickstart
 
 This repository contains CloudFormation templates to deploy and bootstrap a Casper node on AWS.
 
