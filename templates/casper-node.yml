@@ -19,7 +19,7 @@ Parameters:
 
   InstanceType:
     Type: String
-    Default: r5.large
+    Default: r5.xlarge
     Description: Instance type for the nodes
 
   EbsVolumeSize:
