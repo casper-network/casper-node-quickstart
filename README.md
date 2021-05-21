@@ -11,6 +11,15 @@ An AWS IAM user with appropriate resource creation permissions should be used wh
 
 Refer to AWS documentation on [Security best practices in IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
 
+### Hardware Requirements
+
+Minimum Requirements: 
+
+* CPU: 4 vCPU
+* Memory: 32GB
+* Disk: 250GB
+
+
 ### Quick Start
 
 You can deploy the infrastructure by selecting one of the regions below, and clicking on the *launch stack* button. Follow the instructions on the AWS console and fill the required parameters to deploy the CloudFormation stack.
@@ -94,7 +103,9 @@ These keys should be backed up by the node operator and stored in a secure locat
 
 ## Documentation
 
-Casper Node Docs - [https://docs.casperlabs.io](https://docs.casperlabs.io)
+[Casper Node](https://docs.casperlabs.io)
+
+[Make How-To Guides](https://github.com/make-software/how-to-casperlabs)
 
 ## Support
 
