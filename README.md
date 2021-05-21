@@ -77,3 +77,12 @@ The CloudFormation templates create the following components as part of the infr
 - A single EC2 instance that bootstraps a Casper node.
 - A CloudWatch dashboard with metrics to monitor the node.
 - Configuration to access the node through Session Manager.
+
+
+## Documentation
+
+[https://docs.casperlabs.io](https://docs.casperlabs.io)
+
+## Support
+
+Casper Discord - [#node-tech-support](https://discord.gg/ceXXjymY)
