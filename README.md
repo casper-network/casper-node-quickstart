@@ -63,11 +63,7 @@ You can securely access the node in two ways:
     For more information on how to create an AWS KeyPair check the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html)
     *It's important that you store the SSH key in a secure place since it provides access to your node.*
 
-### Sensitive Information
 
-During node bootstrap, validator keys are created in `/etc/casper/validator_keys`
-
-These keys should be backed up by the node operator and stored in a secure location. 
 
 ### Delete Resources
 
@@ -88,6 +84,10 @@ The CloudFormation templates create the following components as part of the infr
 - Configuration to access the node through Session Manager.
 
 ## Backup
+
+During node bootstrap, validator keys are created in `/etc/casper/validator_keys`
+
+These keys should be backed up by the node operator and stored in a secure location. 
 
 [AWS Data Lifecycle Manager](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snapshot-lifecycle.html) can be optionally setup by the node operator to schedule periodic backups of the Casper Node EBS disk. As the snapshots will contain sensitive information (validator keys), appropriate IAM access controls should be applied.
 
