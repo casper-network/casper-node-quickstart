@@ -7,9 +7,9 @@ This repository contains CloudFormation templates to deploy and bootstrap a Casp
 
 ### AWS IAM
 
-An AWS IAM user with appropriate resource creation permissions should be used when running the Quickstart. Use of the AWS account root user is discouraged.
+An AWS IAM user with appropriate resource creation permissions should be used when running the Quickstart. Use of the AWS account's root user is discouraged.
 
-Refer to AWS documentation on [Security best practices in IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
+Refer to the AWS documentation on [Security best practices in IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
 
 ### Hardware Requirements
 
@@ -89,7 +89,7 @@ The CloudFormation templates create the following components as part of the infr
 
 - A VPC with public and private subnets, and all the routing configuration.
 - A single EC2 Instance that bootstraps a Casper node.
-- An Instance Role to provide the EC2 Instance with access to Systems Manager & CkoudWatch
+- An Instance Role to provide the EC2 Instance with access to Systems Manager & CloudWatch
 - A CloudWatch dashboard with metrics to monitor the node.
 - Configuration to access the node through Session Manager.
 
