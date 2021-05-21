@@ -4,6 +4,13 @@ This repository contains CloudFormation templates to deploy and bootstrap a Casp
 
 ## Getting Started
 
+
+### AWS IAM
+
+An AWS IAM user with appropriate resource creation permissions should be used when running the Quickstart. Use of the AWS account root user is discouraged.
+
+Refer to AWS documentation on [Security best practices in IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
+
 ### Quick Start
 
 You can deploy the infrastructure by selecting one of the regions below, and clicking on the *launch stack* button. Follow the instructions on the AWS console and fill the required parameters to deploy the CloudFormation stack.
