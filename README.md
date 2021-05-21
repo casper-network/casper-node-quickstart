@@ -87,7 +87,7 @@ The CloudFormation templates create the following components as part of the infr
 - A CloudWatch dashboard with metrics to monitor the node.
 - Configuration to access the node through Session Manager.
 
-## Backup and Disaster Recovery
+## Backup
 
 [AWS Data Lifecycle Manager](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snapshot-lifecycle.html) can be optionally setup by the node operator to schedule periodic backups of the Casper Node EBS disk. As the snapshots will contain sensitive information (validator keys), appropriate IAM access controls should be applied.
 
