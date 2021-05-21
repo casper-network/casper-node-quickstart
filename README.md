@@ -56,7 +56,9 @@ You can securely access the node in two ways:
     For more information on how to create an AWS KeyPair check the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html)
     *It's important that you store the SSH key in a secure place since it provides access to your node.*
 
+### Sensitive Information
 
+During node bootstrap, validator keys are created in `/etc/casper/validator_keys`
 
 ### Delete Resources
 
@@ -72,6 +74,6 @@ To completely delete all the resources created by the templates go to the [Cloud
 The CloudFormation templates create the following components as part of the infrastructure:
 
 - A VPC with public and private subnets, and all the routing configuration.
-- A single instance Auto Scaling Group that bootstraps a Casper node.
+- A single EC2 instance that bootstraps a Casper node.
 - A CloudWatch dashboard with metrics to monitor the node.
 - Configuration to access the node through Session Manager.
