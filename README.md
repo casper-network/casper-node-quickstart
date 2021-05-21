@@ -4,6 +4,13 @@ This repository contains CloudFormation templates to deploy and bootstrap a Casp
 
 ## Getting Started
 
+
+### AWS IAM
+
+An AWS IAM user with appropriate resource creation permissions should be used when running the Quickstart. Use of the AWS account root user is discouraged.
+
+Refer to AWS documentation on [Security best practices in IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
+
 ### Quick Start
 
 You can deploy the infrastructure by selecting one of the regions below, and clicking on the *launch stack* button. Follow the instructions on the AWS console and fill the required parameters to deploy the CloudFormation stack.
@@ -56,7 +63,11 @@ You can securely access the node in two ways:
     For more information on how to create an AWS KeyPair check the [AWS docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html)
     *It's important that you store the SSH key in a secure place since it provides access to your node.*
 
+### Sensitive Information
 
+During node bootstrap, validator keys are created in `/etc/casper/validator_keys`
+
+These keys should be backed up by the node operator and stored in a secure location. 
 
 ### Delete Resources
 
@@ -72,6 +83,21 @@ To completely delete all the resources created by the templates go to the [Cloud
 The CloudFormation templates create the following components as part of the infrastructure:
 
 - A VPC with public and private subnets, and all the routing configuration.
-- A single instance Auto Scaling Group that bootstraps a Casper node.
+- A single EC2 instance that bootstraps a Casper node.
 - A CloudWatch dashboard with metrics to monitor the node.
 - Configuration to access the node through Session Manager.
+
+## Backup
+
+[AWS Data Lifecycle Manager](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snapshot-lifecycle.html) can be optionally setup by the node operator to schedule periodic backups of the Casper Node EBS disk. As the snapshots will contain sensitive information (validator keys), appropriate IAM access controls should be applied.
+
+## Documentation
+
+Casper Node Docs - [https://docs.casperlabs.io](https://docs.casperlabs.io)
+
+## Support
+
+Casper Discord - [#node-tech-support](https://discord.gg/ceXXjymY)
+
+
+
