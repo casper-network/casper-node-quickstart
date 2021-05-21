@@ -79,7 +79,8 @@ To completely delete all the resources created by the templates go to the [Cloud
 The CloudFormation templates create the following components as part of the infrastructure:
 
 - A VPC with public and private subnets, and all the routing configuration.
-- A single EC2 instance that bootstraps a Casper node.
+- A single EC2 Instance that bootstraps a Casper node.
+- An Instance Role to provide the EC2 Instance with access to Systems Manager & CkoudWatch
 - A CloudWatch dashboard with metrics to monitor the node.
 - Configuration to access the node through Session Manager.
 
