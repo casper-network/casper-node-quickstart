@@ -60,6 +60,8 @@ You can securely access the node in two ways:
 
 During node bootstrap, validator keys are created in `/etc/casper/validator_keys`
 
+These keys should be backed up by the node operator and stored in a secure location. 
+
 ### Delete Resources
 
 To completely delete all the resources created by the templates go to the [CloudFormation Console](https://console.aws.amazon.com/cloudformation/home), select your stack and delete it.
@@ -78,11 +80,17 @@ The CloudFormation templates create the following components as part of the infr
 - A CloudWatch dashboard with metrics to monitor the node.
 - Configuration to access the node through Session Manager.
 
+## Backup and Disaster Recovery
+
+[AWS Data Lifecycle Manager](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snapshot-lifecycle.html) can be optionally setup by the node operator to schedule periodic backups of the Casper Node EBS disk. As the snapshots will contain sensitive information (validator keys), appropriate IAM access controls should be applied.
 
 ## Documentation
 
-[https://docs.casperlabs.io](https://docs.casperlabs.io)
+Casper Node Docs - [https://docs.casperlabs.io](https://docs.casperlabs.io)
 
 ## Support
 
 Casper Discord - [#node-tech-support](https://discord.gg/ceXXjymY)
+
+
+
