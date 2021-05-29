@@ -335,9 +335,9 @@ Resources:
             - python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
             - /tmp/install-cloudwatch-agent.sh
             - /tmp/custom-init-script.sh
- #           - /tmp/install-casper-node-launcher.sh ${ProtocolVersion} ${CasperNetwork} ${TrustedHash}
             - /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Node --region ${AWS::Region}
 
+ #           - /tmp/install-casper-node-launcher.sh ${ProtocolVersion} ${CasperNetwork} ${TrustedHash}
 
   Node:
     Type: AWS::EC2::Instance
