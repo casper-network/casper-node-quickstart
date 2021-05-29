@@ -19,6 +19,7 @@ Metadata:
         default: Node Configuration
       Parameters: 
       - CasperNetwork
+      - ProtocolVersion
       - TrustedHash
       - CustomInitScript
     - 
@@ -64,6 +65,11 @@ Parameters:
     Type: String
     Default: casper
     Description: Name of the Casper network to join (e.g casper, casper-test)
+
+  ProtocolVersion:
+    Type: String
+    Default: 1_2_0
+    Description: Protocol Verson of the Casper network (from a node statud endpoint)
 
   TrustedHash:
     Type: String
@@ -133,6 +139,7 @@ Resources:
         KeyName: !Ref KeyName
         IpWhitelist: !Ref IpWhitelist
         CasperNetwork: !Ref CasperNetwork
+        ProtocolVersion: !Ref ProtocolVersion
         TrustedHash: !Ref TrustedHash
         CustomInitScript: !Ref CustomInitScript
         OwnerName: !Ref OwnerName      
