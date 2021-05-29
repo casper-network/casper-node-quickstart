@@ -251,8 +251,8 @@ Resources:
               permissions: 0777
               content: |
                 #!/bin/bash -x
-                CASPER_NETWORK=${!2}
-                TRUSTED_HASH=${!3}
+                CASPER_NETWORK=${!1}
+                TRUSTED_HASH=${!2}
 
                 #Install all protocols
                 while read protocol_version; do \
@@ -341,7 +341,7 @@ Resources:
             - /tmp/install-cloudwatch-agent.sh
             - /tmp/custom-init-script.sh
             - /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Node --region ${AWS::Region}
-            - /tmp/install-casper-node-launcher.sh ${ProtocolVersion} ${CasperNetwork} ${TrustedHash}
+            - /tmp/install-casper-node-launcher.sh ${CasperNetwork} ${TrustedHash}
 
 
   Node:
