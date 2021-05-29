@@ -258,7 +258,7 @@ Resources:
                 while read protocol_version; do \
                   sudo -u casper /etc/casper/pull_casper_node_version.sh casper.conf $protocol_version; \
                   sudo -u casper /etc/casper/config_from_example.sh $protocol_version; \
-                done < <(curl -sf genesis.casperlabs.io/casper/protocol_versions)
+                done < <(curl -sf genesis.casperlabs.io/$CASPER_NETWORK/protocol_versions)
 
 
                 # Get trusted_hash into config.toml's
@@ -272,9 +272,9 @@ Resources:
 
                 # Start Node
                 sudo logrotate -f /etc/logrotate.d/casper-node;
-                systemctl start casper-node-launcher;
+                sudo systemctl start casper-node-launcher;
                 sleep 2;
-                systemctl status casper-node-launcher;
+                sudo systemctl status casper-node-launcher;
 
             - path: /tmp/install-cloudwatch-agent.sh
               permissions: 0777
@@ -341,8 +341,8 @@ Resources:
             - /tmp/install-cloudwatch-agent.sh
             - /tmp/custom-init-script.sh
             - /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Node --region ${AWS::Region}
+            - /tmp/install-casper-node-launcher.sh ${ProtocolVersion} ${CasperNetwork} ${TrustedHash}
 
- #           - /tmp/install-casper-node-launcher.sh ${ProtocolVersion} ${CasperNetwork} ${TrustedHash}
 
   Node:
     Type: AWS::EC2::Instance
