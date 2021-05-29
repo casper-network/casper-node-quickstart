@@ -48,10 +48,6 @@ Parameters:
     Type: String
     Description: Name of the Casper network to join (e.g casper, casper-test)
 
-  ProtocolVersion:
-    Type: String
-    Description: Protocol Verson of the Casper network in underscore format (from a node statud endpoint). eg 1_2_0
-
   TrustedHash:
     Type: String
     Description: Trusted Hash from a valid node status endpoint or cspr.live site.
