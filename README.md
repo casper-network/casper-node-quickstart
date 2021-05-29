@@ -26,7 +26,7 @@ You can deploy the infrastructure by selecting one of the regions below, and cli
 
 |Region||
 |-|-|
-| us-west-2 | [![launch_stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=casper-main&templateURL=https://casper-node-quickstart.s3.us-east-2.amazonaws.com/master.packaged.yml&region=us-west-2) |
+| us-east-2 | [![launch_stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=casper-main&templateURL=https://casper-node-quickstart.s3.us-east-2.amazonaws.com/master.packaged.yml&region=us-east-2) |
 
 ### Manual Deployment
 
