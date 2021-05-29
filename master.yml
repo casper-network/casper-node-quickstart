@@ -62,7 +62,7 @@ Parameters:
 
   CasperNetwork:
     Type: String
-    Default: casper-test
+    Default: casper
     Description: Name of the Casper network to join (e.g casper, casper-test)
 
   TrustedHash:
