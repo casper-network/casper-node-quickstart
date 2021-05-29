@@ -105,6 +105,8 @@ These keys should be backed up by the node operator and stored in a secure locat
 
 [Casper Node](https://docs.casperlabs.io)
 
+[Casper Node Install Guide](https://github.com/casper-network/casper-node/wiki/Mainnet-Node-Installation-Instructions)
+
 [Make How-To Guides](https://github.com/make-software/how-to-casperlabs)
 
 ## Support
