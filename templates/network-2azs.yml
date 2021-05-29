@@ -47,7 +47,7 @@ Parameters:
 
   OwnerName:
     Type: String
-    Default: nclouds
+    Default: casper
     Description: An arbitrary tag name for the owner of these resources
 
   ProjectName:
