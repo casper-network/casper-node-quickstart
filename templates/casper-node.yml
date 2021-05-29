@@ -265,8 +265,7 @@ Resources:
                 sudo -u casper casper-client keygen /etc/casper/validator_keys;
 
                 # Start Node
-                logrotate -f /etc/logrotate.d/casper-node;
-                sleep 60;
+                sudo logrotate -f /etc/logrotate.d/casper-node;
                 systemctl start casper-node-launcher;
                 sleep 2;
                 systemctl status casper-node-launcher;
