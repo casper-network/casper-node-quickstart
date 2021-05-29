@@ -251,15 +251,21 @@ Resources:
               permissions: 0777
               content: |
                 #!/bin/bash -x
-                PROTOCOL_VERSION=${!1}
                 CASPER_NETWORK=${!2}
                 TRUSTED_HASH=${!3}
 
-                sudo -u casper /etc/casper/pull_casper_node_version.sh $CASPER_NETWORK.conf $PROTOCOL_VERSION
-                sudo -u casper /etc/casper/config_from_example.sh $PROTOCOL_VERSION
+                #Install all protocols
+                while read protocol_version; do \
+                  sudo -u casper /etc/casper/pull_casper_node_version.sh casper.conf $protocol_version; \
+                  sudo -u casper /etc/casper/config_from_example.sh $protocol_version; \
+                done < <(curl -sf genesis.casperlabs.io/casper/protocol_versions)
 
-                # Get trusted_hash into config.toml
-                sudo -u casper sed -i "/trusted_hash =/c\trusted_hash = '$TRUSTED_HASH'" /etc/casper/$PROTOCOL_VERSION/config.toml
+
+                # Get trusted_hash into config.toml's
+                for protocol_dir in /etc/casper/[0-9]*
+                do
+                  sudo -u casper sed -i "/trusted_hash =/c\trusted_hash = '$TRUSTED_HASH'" $protocol_dir/config.toml
+                done
 
                 # Generate Key
                 sudo -u casper casper-client keygen /etc/casper/validator_keys;
