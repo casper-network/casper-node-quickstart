@@ -68,8 +68,7 @@ Parameters:
 
   ProtocolVersion:
     Type: String
-    Default: 1_2_0
-    Description: Protocol Verson of the Casper network (from a node statud endpoint)
+    Description: Protocol Verson of the Casper network in underscore format (from a node statud endpoint). eg 1_2_0
 
   TrustedHash:
     Type: String
