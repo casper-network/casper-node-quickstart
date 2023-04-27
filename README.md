@@ -44,6 +44,10 @@ You can also download the CloudFormation templates and deploy the infrastructure
         --s3-bucket <YOUR_S3_BUCKET>
     ```
 
+    ```console
+    $ aws s3 cp master.packaged.yml s3://<YOUR_S3_BUCKET>/
+    ```    
+
 3. Create the CloudFormation stack:
 
     ```console
