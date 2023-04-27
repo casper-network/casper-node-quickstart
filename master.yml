@@ -45,7 +45,7 @@ Parameters:
 
   EbsVolumeSize:
     Type: Number
-    Default: 250
+    Default: 2000
     Description: Size of the EBS volume of the instances in GB
 
   KeyName:
