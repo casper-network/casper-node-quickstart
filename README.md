@@ -111,6 +111,7 @@ These keys should be backed up by the node operator and stored in a secure locat
 ## Support
 
 [Support Portal](https://support.casperlabs.io)
+
 [Casper Discord](https://discord.gg/casperblockchain)
 
 
