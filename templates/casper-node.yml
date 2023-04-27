@@ -24,7 +24,7 @@ Parameters:
 
   EbsVolumeSize:
     Type: Number
-    Default: 250
+    Default: 2000
     Description: Size of the EBS volume of the instances in GB
 
   AmiId:
@@ -250,27 +250,18 @@ Resources:
                 CASPER_NETWORK=${!1}
                 TRUSTED_HASH=${!2}
 
-                #Install all protocols
+                #from https://docs.casper.network/operators/setup/install-node/
+
+                sudo -u casper /etc/casper/node_util.py stage_protocols $CASPER_NETWORK.conf
+                sudo -u casper casper-client keygen /etc/casper/validator_keys
+                sudo sed -i "/trusted_hash =/c\trusted_hash = '$(casper-client get-block --node-address http://3.14.161.135:7777 -b 20 | jq -r .result.block.hash | tr -d '\n')'" /etc/casper/1_0_0/config.toml
+
                 while read protocol_version; do \
-                  sudo -u casper /etc/casper/pull_casper_node_version.sh casper.conf $protocol_version; \
                   sudo -u casper /etc/casper/config_from_example.sh $protocol_version; \
                 done < <(curl -sf genesis.casperlabs.io/$CASPER_NETWORK/protocol_versions)
 
+                sudo systemctl start casper-node-launcher
 
-                # Get trusted_hash into config.toml's
-                for protocol_dir in /etc/casper/[0-9]*
-                do
-                  sudo -u casper sed -i "/trusted_hash =/c\trusted_hash = '$TRUSTED_HASH'" $protocol_dir/config.toml
-                done
-
-                # Generate Key
-                sudo -u casper casper-client keygen /etc/casper/validator_keys;
-
-                # Start Node
-                sudo logrotate -f /etc/logrotate.d/casper-node;
-                sudo systemctl start casper-node-launcher;
-                sleep 2;
-                sudo systemctl status casper-node-launcher;
 
             - path: /tmp/install-cloudwatch-agent.sh
               permissions: 0777
