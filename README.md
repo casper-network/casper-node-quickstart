@@ -17,7 +17,7 @@ Minimum Requirements:
 
 * CPU: 4 vCPU
 * Memory: 32GB
-* Disk: 250GB
+* Disk: 2TB
 
 
 ### Quick Start
@@ -103,15 +103,15 @@ These keys should be backed up by the node operator and stored in a secure locat
 
 ## Documentation
 
-[Casper Node](https://docs.casperlabs.io)
+[Casper Node](https://docs.casper.network)
 
-[Casper Node Install Guide](https://github.com/casper-network/casper-node/wiki/Mainnet-Node-Installation-Instructions)
+[Casper Node Configuration Guide](https://docs.casper.network/operators/setup/basic-node-configuration/)
 
-[Make How-To Guides](https://github.com/make-software/how-to-casperlabs)
 
 ## Support
 
-Casper Discord - [#node-tech-support](https://discord.gg/ceXXjymY)
+[Support Portal](https://support.casperlabs.io)
+[Casper Discord](https://discord.gg/casperblockchain)
 
 
 
