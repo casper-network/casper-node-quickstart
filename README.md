@@ -2,6 +2,11 @@
 
 This repository contains CloudFormation templates to deploy and bootstrap a Casper node on AWS.
 
+## Deployment Guide
+
+[Deployment Guide PDF](https://github.com/casper-network/casper-node-quickstart/blob/master/AWS%20Casper%20Node%20Deployment%20Guide.pdf)
+
+
 ## Getting Started
 
 
