@@ -18,8 +18,6 @@ Metadata:
       Label: 
         default: Node Configuration
       Parameters: 
-      - CasperNetwork
-      - TrustedHash
       - CustomInitScript
     - 
       Label: 
@@ -59,15 +57,6 @@ Parameters:
     Description: IP to allow SSH access to the node. (e.g. 1.2.3.4/32)
 
   #  ############## Service #############
-
-  CasperNetwork:
-    Type: String
-    Default: casper
-    Description: Name of the Casper network to join (e.g casper, casper-test)
-
-  TrustedHash:
-    Type: String
-    Description: Trusted Hash from a valid node status endpoint or cspr.live site.
 
   CustomInitScript:
     Type: String
@@ -129,11 +118,9 @@ Resources:
         SubnetIds: !GetAtt  Vpc.Outputs.PublicSubnetIds
         InstanceType: !Ref InstanceType
         EbsVolumeSize: !Ref EbsVolumeSize
-        AmiId: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+        AmiId: ami-05efb53a3cc5b13ad
         KeyName: !Ref KeyName
         IpWhitelist: !Ref IpWhitelist
-        CasperNetwork: !Ref CasperNetwork
-        TrustedHash: !Ref TrustedHash
         CustomInitScript: !Ref CustomInitScript
         OwnerName: !Ref OwnerName      
         ProjectName: !Ref ProjectName
