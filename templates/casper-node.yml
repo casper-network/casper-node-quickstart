@@ -29,7 +29,7 @@ Parameters:
 
   AmiId:
     Type: String
-    Default: ami-05efb53a3cc5b13ad
+    Default: "ami-05efb53a3cc5b13ad"
     Description: casper-node 1.4.15 AMI
 
   KeyName:
@@ -43,14 +43,6 @@ Parameters:
     Description: CIDR to allow SSH access to the node (eg. 0.0.0.0/8). Used only if SSH access is enabled.
 
   #  ############## Service #############
-
-  CasperNetwork:
-    Type: String
-    Description: Name of the Casper network to join (e.g casper, casper-test)
-
-  TrustedHash:
-    Type: String
-    Description: Trusted Hash from a valid node status endpoint or cspr.live site.
 
   CustomInitScript:
     Type: String
