@@ -118,7 +118,6 @@ Resources:
         SubnetIds: !GetAtt  Vpc.Outputs.PublicSubnetIds
         InstanceType: !Ref InstanceType
         EbsVolumeSize: !Ref EbsVolumeSize
-        AmiId: ami-05efb53a3cc5b13ad
         KeyName: !Ref KeyName
         IpWhitelist: !Ref IpWhitelist
         CustomInitScript: !Ref CustomInitScript
