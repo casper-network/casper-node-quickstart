@@ -44,14 +44,6 @@ Parameters:
 
   #  ############## Service #############
 
-  CasperNetwork:
-    Type: String
-    Description: Name of the Casper network to join (e.g casper, casper-test)
-
-  TrustedHash:
-    Type: String
-    Description: Trusted Hash from a valid node status endpoint or cspr.live site.
-
   CustomInitScript:
     Type: String
     Default: ''
