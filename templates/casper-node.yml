@@ -29,7 +29,7 @@ Parameters:
 
   AmiId:
     Type: String
-    Default: "ami-0a4a632cc2d842d2d"
+    Default: "ami-0e295be39f75e82cf"
     Description: casper-node 1.5.3 AMI
 
   KeyName:
